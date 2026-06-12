@@ -1,0 +1,2701 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agent Engineering Lab - Advanced Telemetry & Optimization Suite</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Inter & Fira Code Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['Fira Code', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Custom scrollbar matching slate theme */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f8fafc;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-slate-50 text-slate-900 flex flex-col selection:bg-blue-100 selection:text-blue-900">
+
+  <script>
+    // Global simulated observability dataset with attributes
+    let traces = [
+      {
+        id: "tr-04a2",
+        name: "Agentic RAG & Tool Execution",
+        timestamp: "10 mins ago",
+        latency: 1450,
+        tokens: 1840,
+        cost: 0.0245,
+        status: "success",
+        evalScore: 94,
+        query: "Compare features & pricing between LangSmith and LangGraph for small companies.",
+        attributes: {
+          user_sentiment: "positive",
+          task_completed: true,
+          retrieval_success: true,
+          hallucination_detected: false,
+          escalation_required: false,
+          topic: "pricing"
+        },
+        spans: [
+          {
+            id: "sp-1",
+            name: "Planner Node (Routing)",
+            type: "planner",
+            duration: 150,
+            startOffset: 0,
+            status: "success",
+            tokens: 350,
+            model: "gpt-4o",
+            input: { query: "Compare features & pricing between LangSmith and LangGraph..." },
+            output: { next_step: "retrieval", search_strategy: "vector_db_first" },
+            conceptExplain: "The Root Planner sets up a decomposition schema. It translates user queries into distinct steps like fetching documents or triggering sub-agents."
+          },
+          {
+            id: "sp-2",
+            name: "Retriever Service",
+            type: "retriever",
+            duration: 320,
+            startOffset: 150,
+            status: "success",
+            tokens: 0,
+            model: "text-embedding-3-small",
+            input: { query: "LangSmith vs LangGraph pricing and features", limit: 3 },
+            output: {
+              retrieved_docs: [
+                { id: "doc-1", source: "docs.langsmith.com", relevance: 0.95, text: "LangSmith pricing starts at a generous free tier of 5,000 runs per month, scaling to $39/month per seat or pay-as-you-go based on total spans tracked." },
+                { id: "doc-2", source: "docs.langgraph.com", relevance: 0.89, text: "LangGraph is an open-source library for building multi-actor applications with state. Commercial deployment support is offered via LangGraph Cloud, integrated with LangSmith." },
+                { id: "doc-3", source: "blog.langchain.com", relevance: 0.82, text: "For small teams, self-hosting LangGraph is free, but linking it directly to LangSmith ensures clean tracing, visual debugger support, and remote state exploration." }
+              ]
+            },
+            conceptExplain: "Retrievers query external vector stores for context. Observability is key here to identify RAG failure modes (e.g. poor ranking, noisy document chunks)."
+          },
+          {
+            id: "sp-3",
+            name: "Web Calculator Tool",
+            type: "tool",
+            duration: 230,
+            startOffset: 470,
+            status: "success",
+            tokens: 140,
+            model: "python-interpreter-v1",
+            input: { expression: "(39 * 3) + (0.005 * 15000) # Calculator for 3 seats, 15k overages" },
+            output: { result: "192.00 USD/month projected expense." },
+            conceptExplain: "Tools run actions inside deterministic code blocks or external APIs. Observing inputs, stdout, and error responses preserves safety and verifies correctness."
+          },
+          {
+            id: "sp-4",
+            name: "Generator Model Response",
+            type: "llm",
+            duration: 650,
+            startOffset: 700,
+            status: "success",
+            tokens: 1250,
+            model: "gpt-4o",
+            input: { system: "Synthesize facts about LangSmith & LangGraph...", retrieved_context_tokens: 800 },
+            output: { text: "For a small team requiring 3 seats, LangSmith pricing scales to approximately $192/month. LangGraph is open source with free local development, but leverages LangGraph Cloud for robust managed execution. It is highly recommended to bind LangGraph with LangSmith for comprehensive multi-turn tracing support." },
+            conceptExplain: "LLMs ingest context + prompt to emit the final answer. Monitoring prompt vs. completion tokens provides visibility into context scaling costs."
+          },
+          {
+            id: "sp-5",
+            name: "Heuristic Guardrail Evaluator",
+            type: "evaluator",
+            duration: 100,
+            startOffset: 1350,
+            status: "success",
+            tokens: 100,
+            model: "llm-judge-gpt-4o-mini",
+            input: { text_to_eval: "approx $192/month...", ground_truth: "3 seats, $39 each + 15k traces" },
+            output: { hallucination_risk: "low", conciseness: 0.90, correctness: 0.96, helpfulness: 0.98 },
+            conceptExplain: "Evaluators validate outputs against constraints. Utilizing LLM-as-a-judge provides robust scoring pipelines to catch regressions instantly."
+          }
+        ]
+      },
+      {
+        id: "tr-92f1",
+        name: "Standard Direct LLM Chatbot",
+        timestamp: "24 mins ago",
+        latency: 520,
+        tokens: 420,
+        cost: 0.0035,
+        status: "success",
+        evalScore: 88,
+        query: "Tell me in simple terms: What is a Span in LangSmith?",
+        attributes: {
+          user_sentiment: "neutral",
+          task_completed: true,
+          retrieval_success: true,
+          hallucination_detected: false,
+          escalation_required: false,
+          topic: "concepts"
+        },
+        spans: [
+          {
+            id: "sp-2-1",
+            name: "LLM Completion Run",
+            type: "llm",
+            duration: 520,
+            startOffset: 0,
+            status: "success",
+            tokens: 420,
+            model: "claude-3-5-sonnet",
+            input: { query: "What is a Span?" },
+            output: { text: "In observability, a Span represents a single, units of work. Examples include a single LLM request, a retriever database query, or a python tool call. Think of Spans as lego blocks, and the overall Trace as the entire castle!" },
+            conceptExplain: "A single, focused operation. Measuring its start, end, input, and output is the foundational building block of telemetry structure."
+          }
+        ]
+      },
+      {
+        id: "tr-31b9",
+        name: "Failing Multi-Agent Loop",
+        timestamp: "1 hour ago",
+        latency: 1850,
+        tokens: 2200,
+        cost: 0.0310,
+        status: "error",
+        evalScore: 45,
+        query: "Fetch user profile dynamic statistics from DB server and summarize.",
+        attributes: {
+          user_sentiment: "negative",
+          task_completed: false,
+          retrieval_success: false,
+          hallucination_detected: false,
+          escalation_required: true,
+          topic: "database"
+        },
+        spans: [
+          {
+            id: "sp-3-1",
+            name: "DB Query Router",
+            type: "planner",
+            duration: 180,
+            startOffset: 0,
+            status: "success",
+            tokens: 400,
+            model: "gpt-4o",
+            input: { action: "lookup_db", table: "user_metrics" },
+            output: { next_action: "execute_sql" },
+            conceptExplain: "Router analyzes dynamic queries to choose target executors."
+          },
+          {
+            id: "sp-3-2",
+            name: "SQL Execution Engine",
+            type: "tool",
+            duration: 450,
+            startOffset: 180,
+            status: "error",
+            tokens: 0,
+            model: "postgresql-connector-prod",
+            input: { query: "SELECT * FROM user_metrics_active WHERE last_login > NOW() - INTERVAL '30 days'" },
+            output: { error: "FATAL: Connection refused to port 5432 - Server timeout." },
+            conceptExplain: "Observing exact failure nodes helps developers trace database, network, and token validation errors in microservice boundaries."
+          },
+          {
+            id: "sp-3-3",
+            name: "Agent Error Handler Recovery",
+            type: "planner",
+            duration: 320,
+            startOffset: 630,
+            status: "success",
+            tokens: 650,
+            model: "gpt-4o",
+            input: { error_logged: "FATAL: Connection refused", user_action: "Fetch stats" },
+            output: { fallback_route: "generate_graceful_apology_response" },
+            conceptExplain: "Modern resilient agents use retry logic and catch-and-adapt pathways. Observability lets engineers isolate self-healing attempts."
+          },
+          {
+            id: "sp-3-4",
+            name: "Fall-back Message Synthesizer",
+            type: "llm",
+            duration: 900,
+            startOffset: 950,
+            status: "success",
+            tokens: 1150,
+            model: "gpt-4o",
+            input: { prompt: "Apologize politely that real-time database servers are experiencing temporary connection limits..." },
+            output: { text: "I'm sorry, but we can't fetch your profile details right now as our metrics engine is currently undergoing maintenance. Please try again in a few minutes." },
+            conceptExplain: "Synthesized output produced when standard pathways fail, guaranteeing continuous execution despite backend errors."
+          }
+        ]
+      }
+    ];
+
+    // Graph Playgrounds Workflows
+    const graphWorkflows = {
+      RetrievalGraph: {
+        name: "RetrievalGraph",
+        description: "Standard stateful retrieval augmentation chain.",
+        nodes: ["__start__", "retrieve_chunks", "format_prompt", "generate_answer", "__end__"],
+        defaultInput: "Compare LangSmith pricing seat boundaries.",
+        mockResponse: "### RetrievalGraph Output\n* **LangSmith Pricing Free Tier:** Up to 5,000 trace runs processed monthly at zero cost.\n* **Team Seat Cost:** $39/month per developer seat.\n* **Factual Grounding:** Verified dynamically against indexed LangSmith docs.",
+        sourceTraces: ["tr-04a2"],
+        documents: [
+          { id: "doc-1", source: "docs.langsmith.com", text: "LangSmith pricing starts at a generous free tier of 5,000 runs per month, scaling to $39/month per seat.", relevance: 0.95 }
+        ]
+      },
+      ResearchGraph: {
+        name: "ResearchGraph",
+        description: "Autonomous web search, critic-reflection, and state-consolidation graph.",
+        nodes: ["__start__", "google_search", "critic_revision", "generate_report", "__end__"],
+        defaultInput: "Find core architectural patterns for multi-agent systems.",
+        mockResponse: "### ResearchGraph Synthesis Report\n* **Supervisor Pattern:** Master router coordinates work pools.\n* **Choreography Pattern:** Decentralized actors state-passing on shared message queues.\n* **Telemetry Tip:** Deep trace spans are crucial to avoid runaway loop costs.",
+        sourceTraces: ["tr-92f1"],
+        documents: [
+          { id: "doc-4", source: "arxiv.org/abs/agents", text: "Multi-actor systems serialize memory keys into unified states to prevent infinite context loops.", relevance: 0.91 }
+        ]
+      },
+      ToolCallingGraph: {
+        name: "ToolCallingGraph",
+        description: "Autonomous LLM router backed by calculator and bash terminal sandboxes.",
+        nodes: ["__start__", "parse_arguments", "calculator_execution", "compile_output", "__end__"],
+        defaultInput: "Project compute spend for 3 developers handling 250k spans.",
+        mockResponse: "### ToolCallingGraph Computation Result\n* **Mathematical Output:** $39 * 3 + (0.005 * 250000) = $1,367.00 USD projected cost limit.\n* **Tool Status:** 0 error flags raised across system boundaries.",
+        sourceTraces: ["tr-04a2"],
+        documents: []
+      },
+      EvaluationGraph: {
+        name: "EvaluationGraph",
+        description: "Online automated alignment judge using context similarity constraints.",
+        nodes: ["__start__", "fetch_ground_truth", "conciseness_analysis", "hallucination_evaluation", "__end__"],
+        defaultInput: "Check alignment score for 'LangSmith starts at $39/seat'.",
+        mockResponse: "### EvaluationGraph Automated Grade\n* **Hallucination Detected:** False\n* **Correctness Score:** 0.98\n* **Justification:** Assertions align perfectly with ground truth context.",
+        sourceTraces: ["tr-04a2"],
+        documents: [
+          { id: "doc-1", source: "docs.langsmith.com", text: "LangSmith pricing starts at $39/month per seat.", relevance: 0.99 }
+        ]
+      }
+    };
+
+    // Offline Experiment Test Cases (Prompt A vs Prompt B vs Prompt C)
+    const testCases = {
+      pricing: {
+        title: "Scenario: Pricing & Seats",
+        query: "Provide a seat pricing overview for small companies starting with LangSmith.",
+        agentA: {
+          prompt: "You are a helpful assistant. Explain pricing.",
+          response: "Hello! Thank you for inquiring about LangSmith. LangSmith starts with a free tier covering up to 5,000 trace executions monthly. For small teams, standard commercial seats are priced at $39/month per seat. If you have overages, you pay based on tracked spans. To outline this once more, seats cost $39/month per person, and small teams scale easily at $39 per user seat. In conclusion, the team pricing scales per seat at $39/month.",
+          accuracy: 0.95,
+          conciseness: 0.45,
+          promptTokens: 2500,
+          completionTokens: 850,
+          cost: 0.0165,
+          alerts: ["⚠️ Explanation Redundancy: Seat pricing is repeated three distinct times in the completion block."]
+        },
+        agentB: {
+          prompt: "You are a concise technical assistant. Avoid unnecessary explanations.",
+          response: "### LangSmith Starter Pricing\n* **Free Tier:** Includes up to 5,000 trace executions per month.\n* **Team Plan:** Costs $39/month per developer seat.\n* **Scaling Limit:** Overage spans are calculated on a clear pay-as-you-go schema.",
+          accuracy: 0.95,
+          conciseness: 0.98,
+          promptTokens: 1100,
+          completionTokens: 180,
+          cost: 0.0055,
+          alerts: ["✔ Converted verbose explanations into structured bullet logs. -78% output compression achieved."]
+        },
+        agentC: {
+          prompt: "Return ONLY critical quantitative metrics. Zero fluff.",
+          response: "LangSmith: 5,000 free runs/mo. $39/mo per seat. Overage: dynamic span scale.",
+          accuracy: 0.93,
+          conciseness: 1.0,
+          promptTokens: 800,
+          completionTokens: 35,
+          cost: 0.0021,
+          alerts: ["✔ Ultra-compressed formatting. Minimal accuracy drift, extreme dollar savings."]
+        }
+      },
+      multiagent: {
+        title: "Scenario: State Cycles",
+        query: "What is the role of state serialization inside multi-agent frameworks?",
+        agentA: {
+          prompt: "You are a helpful assistant. Tell me about agent state.",
+          response: "Inside multi-agent architectures, state serialization handles the transition of persistent variables. It allows models to reload context frames across nodes. Specifically, serialization persists variables. By saving state variables to memory files, state variables are successfully preserved. This variable storage pattern ensures consistency. In summary, saving variables ensures continuous history.",
+          accuracy: 0.92,
+          conciseness: 0.50,
+          promptTokens: 3800,
+          completionTokens: 920,
+          cost: 0.0225,
+          alerts: ["⚠️ Verbose Repetition: Re-explains variable preservation loops using multiple synonymous sentences."]
+        },
+        agentB: {
+          prompt: "Analyze agent state cycles. Highlight node variables. Be brief.",
+          response: "### State Serialization Core Benefits\n* **State Persistence:** Saves graph variables to memory between node iterations.\n* **Resume Cycles:** Empowers resilient self-healing agents to re-hydrate execution workflows post-interruption.",
+          accuracy: 0.94,
+          conciseness: 0.95,
+          promptTokens: 1800,
+          completionTokens: 220,
+          cost: 0.0078,
+          alerts: ["✔ Redundant loops removed. Response quality maintained; total tokens reduced by -65%."]
+        },
+        agentC: {
+          prompt: "Explain state persistence in under 3 lines.",
+          response: "State serialization saves variables between node ticks, preventing runaway loops and enabling workflow resumption after backend interruptions.",
+          accuracy: 0.91,
+          conciseness: 0.99,
+          promptTokens: 950,
+          completionTokens: 60,
+          cost: 0.0031,
+          alerts: ["✔ Perfect semantic density under constraint rules."]
+        }
+      },
+      recovery: {
+        title: "Scenario: Database Timeout",
+        query: "Handle connection timeouts gracefully when query execution triggers database refusal.",
+        agentA: {
+          prompt: "Give me an error handling system response.",
+          response: "Oh no, database connection was refused on port 5432! The system timed out. To repeat what happened, the database timed out. We are experiencing port 5432 connection refusals which means port 5432 is down. Please try again soon because the database timed out and port 5432 is unavailable.",
+          accuracy: 0.88,
+          conciseness: 0.38,
+          promptTokens: 4200,
+          completionTokens: 600,
+          cost: 0.0210,
+          alerts: ["⚠️ High Duplication: Port 5432 and connection timeout variables are echoed redundantly."]
+        },
+        agentB: {
+          prompt: "Explain error handling steps concisely.",
+          response: "### Connection Exception Handler\n* **Anomalous Event:** Database connection refused on Postgres Port 5432 (timeout).\n* **Graceful Fallback:** Action routing initialized graceful recovery, prompting the user to re-attempt in 3 minutes.",
+          accuracy: 0.92,
+          conciseness: 0.96,
+          promptTokens: 1500,
+          completionTokens: 160,
+          cost: 0.0052,
+          alerts: ["✔ Concise anomaly routing. Retained accuracy while eliminating 440 duplicate token units."]
+        },
+        agentC: {
+          prompt: "Log database timeout error gracefully.",
+          response: "Error: DB timeout Port 5432. Action: Prompt retry in 3 minutes.",
+          accuracy: 0.90,
+          conciseness: 1.0,
+          promptTokens: 600,
+          completionTokens: 40,
+          cost: 0.0019,
+          alerts: ["✔ Direct telemetry log translation. Extremely low processing overhead."]
+        }
+      }
+    };
+
+    // Redundancy Analyzer Dataset (Concept loops, wasted tokens, compression)
+    const redundancyDataset = {
+      sample1: {
+        title: "Agent RAG Bloat (RAG Response)",
+        original: "LangChain is a framework designed to build applications. LangChain allows developers to chain prompts together. LangChain helps build applications by simplifying prompt chaining. Essentially, LangChain makes building applications easy because it chains prompts together.",
+        optimized: "LangChain is a framework that simplifies application development by enabling developers to chain prompts together.",
+        wasteTokens: 55,
+        wastePercent: 68,
+        conceptRepeats: [
+          { text: "LangChain is a framework designed to build applications", type: "Base Frame" },
+          { text: "LangChain allows developers to chain prompts together", type: "Base Action" },
+          { text: "LangChain helps build applications by simplifying prompt chaining", type: "Duplicate Loop 1" },
+          { text: "LangChain makes building applications easy because it chains prompts together", type: "Duplicate Loop 2" }
+        ]
+      },
+      sample2: {
+        title: "Autonomous Agent State Bloat (Loop Output)",
+        original: "We are currently checking the weather. To determine the forecast, we are checking the weather. The weather is being actively checked using our search tool to find out what the weather is like today.",
+        optimized: "The system is querying the search tool to retrieve today's weather forecast.",
+        wasteTokens: 38,
+        wastePercent: 65,
+        conceptRepeats: [
+          { text: "checking the weather", type: "Base Action" },
+          { text: "determine the forecast, we are checking the weather", type: "Duplicate Loop 1" },
+          { text: "actively checked using our search tool", type: "Action Frame" },
+          { text: "find out what the weather is like", type: "Duplicate Loop 2" }
+        ]
+      }
+    };
+
+    // Custom Attributes list
+    let customAttributes = [
+      { name: "user_sentiment", description: "Was the user satisfied with the answer?", type: "Categorical", values: ["positive", "neutral", "negative"] },
+      { name: "task_completed", description: "Did the agent reach its terminal objective?", type: "Boolean" },
+      { name: "retrieval_success", description: "Were injected document chunks highly relevant?", type: "Boolean" },
+      { name: "hallucination_detected", description: "LLM output contradicted grounding context", type: "Boolean" },
+      { name: "escalation_required", description: "Routed transaction to real-time human agent", type: "Boolean" }
+    ];
+
+    // Simulated Instrumentation code mapping to execution spans
+    const instrumentationSpans = {
+      run_pipeline: {
+        name: "run_pipeline()",
+        decorator: "@traceable",
+        runType: "chain",
+        input: '{\n  "user_query": "Compare seat pricing in LangSmith..."\n}',
+        output: '{\n  "result": "LangSmith costs $39/seat..."\n}',
+        latency: 1835,
+        tokens: 1840,
+        status: "success",
+        codeSnippet: `<span class="text-blue-600">@traceable</span>(<span class="text-indigo-600">name</span>=<span class="text-emerald-600">"run_agent_pipeline"</span>)
+<span class="text-purple-600">def</span> <span class="text-blue-700 font-semibold">run_pipeline</span>(user_query):
+    <span class="text-slate-400"># 1. Format the grounding user prompt template</span>
+    prompt = format_prompt(user_query)
+    
+    <span class="text-slate-400"># 2. Invoke generative completion models</span>
+    response = invoke_llm(prompt)
+    
+    <span class="text-slate-400"># 3. Clean and parse output data structure</span>
+    result = parse_output(response)
+    <span class="text-purple-600">return</span> result`
+      },
+      format_prompt: {
+        name: "format_prompt()",
+        decorator: '@traceable(run_type="prompt")',
+        runType: "prompt",
+        input: '{\n  "query": "Compare seat pricing..."\n}',
+        output: '"System: Answer concisely. User: Compare seat..."',
+        latency: 20,
+        tokens: 350,
+        status: "success",
+        codeSnippet: `<span class="text-blue-600">@traceable</span>(<span class="text-indigo-600">name</span>=<span class="text-emerald-600">"format_prompt"</span>, <span class="text-indigo-600">run_type</span>=<span class="text-emerald-600">"prompt"</span>)
+<span class="text-purple-600">def</span> <span class="text-blue-700 font-semibold">format_prompt</span>(query):
+    <span class="text-purple-600">return</span> <span class="text-emerald-600">f"System: Answer concisely. User: {query}"</span>`
+      },
+      invoke_llm: {
+        name: "invoke_llm()",
+        decorator: '@traceable(run_type="llm")',
+        runType: "llm",
+        input: '{\n  "prompt": "System: Answer concisely. User..."\n}',
+        output: '"LangSmith pricing starts at $39/month per seat..."',
+        latency: 1800,
+        tokens: 1490,
+        status: "success",
+        codeSnippet: `<span class="text-blue-600">@traceable</span>(<span class="text-indigo-600">name</span>=<span class="text-emerald-600">"invoke_llm"</span>, <span class="text-indigo-600">run_type</span>=<span class="text-emerald-600">"llm"</span>)
+<span class="text-purple-600">def</span> <span class="text-blue-700 font-semibold">invoke_llm</span>(prompt):
+    <span class="text-slate-400"># Triggers remote model generation</span>
+    <span class="text-purple-600">return</span> model.generate(prompt)`
+      },
+      parse_output: {
+        name: "parse_output()",
+        decorator: "@traceable",
+        runType: "parser",
+        input: '"LangSmith pricing starts at $39/month per seat..."',
+        output: '"LangSmith pricing starts at $39/month per seat..."',
+        latency: 15,
+        tokens: 0,
+        status: "success",
+        codeSnippet: `<span class="text-blue-600">@traceable</span>(<span class="text-indigo-600">name</span>=<span class="text-emerald-600">"parse_output"</span>, <span class="text-indigo-600">run_type</span>=<span class="text-emerald-600">"parser"</span>)
+<span class="text-purple-600">def</span> <span class="text-blue-700 font-semibold">parse_output</span>(raw_text):
+    <span class="text-purple-600">return</span> raw_text.strip()`
+      }
+    };
+
+    const state = {
+      activeTab: 'instrumentation', // Default starting tab
+      selectedTraceId: 'tr-04a2',
+      selectedSpanId: 'sp-2',
+      selectedInstrFunction: 'run_pipeline', 
+      selectedGraph: 'RetrievalGraph', // Playground active graph
+      playgroundInput: graphWorkflows['RetrievalGraph'].defaultInput,
+      playgroundIsRunning: false,
+      playgroundProgressNodeIndex: -1,
+      playgroundLog: [],
+      
+      // Response Optimization Lab States
+      selectedScenario: 'pricing',
+      scaleRequestsDay: 100000, // Dynamic cost slider value
+      promptSelected: 'agentB', // Default selected variant in Optimization
+
+      // Redundancy Analyzer States
+      selectedRedundancyKey: 'sample1',
+      isCompacting: false,
+      isCompacted: false,
+
+      simSteps: {
+        planner: true,
+        retriever: true,
+        tool: false,
+        evaluator: true
+      },
+      simAttributes: {
+        user_sentiment: "neutral",
+        task_completed: "true",
+        retrieval_success: "true",
+        hallucination_detected: "false",
+        escalation_required: "false"
+      },
+      isSimulating: false,
+      simQuery: "Explain RAG retrieval issues.",
+      simProgress: 0,
+      simLog: [],
+      newAttr: {
+        name: '',
+        desc: '',
+        type: 'Boolean'
+      }
+    };
+
+    function selectTrace(id) {
+      state.selectedTraceId = id;
+      const trace = traces.find(t => t.id === id);
+      if (trace && trace.spans.length > 0) {
+        state.selectedSpanId = trace.spans[0].id;
+      }
+      render();
+    }
+
+    function selectSpan(id) {
+      state.selectedSpanId = id;
+      render();
+    }
+
+    function selectInstrFunction(funcKey) {
+      state.selectedInstrFunction = funcKey;
+      render();
+    }
+
+    function selectGraph(graphKey) {
+      state.selectedGraph = graphKey;
+      state.playgroundInput = graphWorkflows[graphKey].defaultInput;
+      state.playgroundProgressNodeIndex = -1;
+      state.playgroundLog = [];
+      render();
+    }
+
+    function changeTab(tabId) {
+      state.activeTab = tabId;
+      render();
+    }
+
+    function updateSimStep(stepKey) {
+      state.simSteps[stepKey] = !state.simSteps[stepKey];
+    }
+
+    function updateSimQuery(val) {
+      state.simQuery = val;
+    }
+
+    function updateSimAttr(key, val) {
+      state.simAttributes[key] = val;
+    }
+
+    function updatePlaygroundInput(val) {
+      state.playgroundInput = val;
+    }
+
+    function updateScenario(val) {
+      state.selectedScenario = val;
+      render();
+    }
+
+    function updateScaleSlider(val) {
+      state.scaleRequestsDay = parseInt(val);
+      render();
+    }
+
+    function selectPromptVariant(variantId) {
+      state.promptSelected = variantId;
+      render();
+    }
+
+    function selectRedundancyKey(key) {
+      state.selectedRedundancyKey = key;
+      state.isCompacted = false;
+      state.isCompacting = false;
+      render();
+    }
+
+    function triggerCompactAnimation() {
+      if (state.isCompacting) return;
+      state.isCompacting = true;
+      render();
+      setTimeout(() => {
+        state.isCompacting = false;
+        state.isCompacted = true;
+        render();
+      }, 1000);
+    }
+
+    function addCustomAttribute(e) {
+      e.preventDefault();
+      if (!state.newAttr.name.trim()) return;
+      const normalized = state.newAttr.name.trim().toLowerCase().replace(/\s+/g, '_');
+      if (customAttributes.some(a => a.name === normalized)) return;
+
+      customAttributes.push({
+        name: normalized,
+        description: state.newAttr.desc || "Self-defined tracing metric",
+        type: state.newAttr.type
+      });
+
+      state.simAttributes[normalized] = state.newAttr.type === 'Boolean' ? 'false' : 'normal';
+      state.newAttr.name = '';
+      state.newAttr.desc = '';
+      state.newAttr.type = 'Boolean';
+      render();
+    }
+  </script>
+
+  <script>
+    // Live execution simulation for the Graph Playground
+    function executeGraphPlayground() {
+      if (state.playgroundIsRunning) return;
+      state.playgroundIsRunning = true;
+      state.playgroundProgressNodeIndex = 0;
+      state.playgroundLog = ["Initializing Graph Execution Environment...", `Active Session Context: ${state.selectedGraph}`];
+      render();
+
+      const workflow = graphWorkflows[state.selectedGraph];
+      let step = 0;
+
+      const interval = setInterval(() => {
+        if (step < workflow.nodes.length) {
+          state.playgroundProgressNodeIndex = step;
+          state.playgroundLog.push(`[NODE SUCCESS] Transitioned through structure: '${workflow.nodes[step]}' successfully.`);
+          step++;
+          render();
+        } else {
+          clearInterval(interval);
+          state.playgroundIsRunning = false;
+          state.playgroundProgressNodeIndex = workflow.nodes.length; // highlight completed state
+          state.playgroundLog.push(`Graph finalized execution with terminal status: success.`);
+          render();
+        }
+      }, 500);
+    }
+
+    function triggerSimulation() {
+      if (state.isSimulating) return;
+      state.isSimulating = true;
+      state.simProgress = 0;
+      state.simLog = [];
+      
+      const stepsToRun = [];
+      if (state.simSteps.planner) stepsToRun.push({ label: "Planner Routing Node Initiated", type: "planner", ms: 140, tokens: 380 });
+      if (state.simSteps.retriever) stepsToRun.push({ label: "Retriever DB Matching Completed", type: "retriever", ms: 310, tokens: 0 });
+      if (state.simSteps.tool) stepsToRun.push({ label: "External Python Sandbox Tool Execution", type: "tool", ms: 400, tokens: 210 });
+      stepsToRun.push({ label: "Generative LLM Context Ingestion & Generation", type: "llm", ms: 680, tokens: 1350 });
+      if (state.simSteps.evaluator) stepsToRun.push({ label: "LLM-as-a-Judge Evaluation Finalized", type: "evaluator", ms: 120, tokens: 110 });
+
+      render();
+
+      let currentStepIndex = 0;
+      const interval = setInterval(() => {
+        if (currentStepIndex < stepsToRun.length) {
+          const step = stepsToRun[currentStepIndex];
+          state.simLog.push(`[${step.type.toUpperCase()}] ${step.label} (${step.ms}ms)`);
+          state.simProgress = Math.min(((currentStepIndex + 1) / stepsToRun.length) * 100, 100);
+          currentStepIndex++;
+          render();
+        } else {
+          clearInterval(interval);
+          
+          const finalLatency = stepsToRun.reduce((acc, s) => acc + s.ms, 0);
+          const finalTokens = stepsToRun.reduce((acc, s) => acc + s.tokens, 0);
+          const simulatedSpans = stepsToRun.map((step, idx) => {
+            let offset = stepsToRun.slice(0, idx).reduce((acc, s) => acc + s.ms, 0);
+            return {
+              id: `sim-sp-${idx}`,
+              name: step.label,
+              type: step.type,
+              duration: step.ms,
+              startOffset: offset,
+              status: "success",
+              tokens: step.tokens,
+              model: step.type === "llm" ? "gpt-4o-mini" : "agent-util-v2",
+              input: { query: state.simQuery },
+              output: step.type === "llm" 
+                ? { text: `Processed query regarding "${state.simQuery}". Simulated robust context alignment successfully integrated.` } 
+                : { state: "step_complete" },
+              conceptExplain: "Dynamically compiled trace step during active simulator flow. Spans aggregate live metrics instantly."
+            };
+          });
+
+          const parsedAttributes = { topic: "general" };
+          customAttributes.forEach(attr => {
+            let rawVal = state.simAttributes[attr.name];
+            if (attr.type === 'Boolean') {
+              parsedAttributes[attr.name] = rawVal === 'true';
+            } else {
+              parsedAttributes[attr.name] = rawVal || 'neutral';
+            }
+          });
+
+          const newTraceId = `tr-sim-${Math.random().toString(36).substring(2, 6)}`;
+          const simulatedTrace = {
+            id: newTraceId,
+            name: `Custom Simulated Run: ${state.simQuery.slice(0, 24)}...`,
+            timestamp: "Just now",
+            latency: finalLatency,
+            tokens: finalTokens,
+            cost: parseFloat((finalTokens * 0.000015).toFixed(4)),
+            status: "success",
+            evalScore: Math.floor(Math.random() * 20) + 80,
+            query: state.simQuery,
+            attributes: parsedAttributes,
+            spans: simulatedSpans
+          };
+
+          traces.unshift(simulatedTrace);
+          state.selectedTraceId = newTraceId;
+          state.selectedSpanId = simulatedSpans[0].id;
+          state.isSimulating = false;
+          state.activeTab = "insights"; 
+          render();
+        }
+      }, 350);
+    }
+  </script>
+
+  <!-- HEADER BAR -->
+  <header class="border-b border-slate-200 bg-white sticky top-0 z-50 px-6 py-3.5 flex flex-col xl:flex-row justify-between items-center gap-4 shadow-sm shadow-slate-100/40">
+    <div class="flex items-center gap-3">
+      <div class="p-2 bg-blue-50 border border-blue-200 rounded-lg text-blue-600 shadow-sm">
+        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polygon points="2 17 12 22 22 17"/><polygon points="2 12 12 17 22 12"/></svg>
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <h1 class="text-sm font-bold tracking-tight text-slate-900">Agent Engineering Lab</h1>
+          <span class="inline-flex items-center rounded-md border border-blue-100 bg-blue-50/50 px-1.5 py-0.5 text-[10px] font-semibold text-blue-700">v4.0.0</span>
+        </div>
+        <p class="text-[11px] text-slate-500 font-normal">Autonomous Sandbox, Playground, and System Optimization Suite</p>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <nav class="inline-flex h-10 items-center justify-center rounded-lg bg-slate-150 p-1 text-slate-600 max-w-full overflow-x-auto">
+      <button onclick="changeTab('instrumentation')" id="nav-instrumentation" class="inline-flex items-center gap-1.5 justify-center whitespace-nowrap rounded-md px-3.5 py-1.5 text-xs font-semibold transition-all">
+        <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+        <span>1. Instrumentation</span>
+      </button>
+      <button onclick="changeTab('playground')" id="nav-playground" class="inline-flex items-center gap-1.5 justify-center whitespace-nowrap rounded-md px-3.5 py-1.5 text-xs font-semibold transition-all">
+        <svg class="h-3.5 w-3.5 animate-pulse text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        <span>2. Playground</span>
+      </button>
+      <button onclick="changeTab('dashboard')" id="nav-dashboard" class="inline-flex items-center gap-1.5 justify-center whitespace-nowrap rounded-md px-3.5 py-1.5 text-xs font-semibold transition-all">
+        <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+        <span>3. Trace Explorer</span>
+      </button>
+      <button onclick="changeTab('explorer')" id="nav-explorer" class="inline-flex items-center gap-1.5 justify-center whitespace-nowrap rounded-md px-3.5 py-1.5 text-xs font-semibold transition-all">
+        <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><rect x="16" y="16" width="6" height="6" rx="1"/><rect x="2" y="16" width="6" height="6" rx="1"/><rect x="9" y="2" width="6" height="6" rx="1"/><path d="M12 8v8"/><path d="M12 16H6"/><path d="M18 16h-6"/></svg>
+        <span>4. Waterfall Analytics</span>
+      </button>
+      <button onclick="changeTab('retrieval')" id="nav-retrieval" class="inline-flex items-center gap-1.5 justify-center whitespace-nowrap rounded-md px-3.5 py-1.5 text-xs font-semibold transition-all">
+        <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <span>5. Retrieval Inspector</span>
+      </button>
+      <button onclick="changeTab('tokens')" id="nav-tokens" class="inline-flex items-center gap-1.5 justify-center whitespace-nowrap rounded-md px-3.5 py-1.5 text-xs font-semibold transition-all">
+        <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><circle cx="8" cy="8" r="6"/><circle cx="18" cy="18" r="4"/><path d="M12 18a6 6 0 0 0-6-6"/></svg>
+        <span>6. Evaluation Center</span>
+      </button>
+      <button onclick="changeTab('prompts')" id="nav-prompts" class="inline-flex items-center gap-1.5 justify-center whitespace-nowrap rounded-md px-3.5 py-1.5 text-xs font-semibold transition-all text-indigo-700 font-bold">
+        <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M13 6h3a2 2 0 0 1 2 2v7"/><path d="M11 18H8a2 2 0 0 1-2-2V9"/></svg>
+        <span>7. Prompt Optimization</span>
+      </button>
+      <button onclick="changeTab('analyzer')" id="nav-analyzer" class="inline-flex items-center gap-1.5 justify-center whitespace-nowrap rounded-md px-3.5 py-1.5 text-xs font-semibold transition-all text-rose-600 font-bold">
+        <svg class="h-3.5 w-3.5 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="14"/></svg>
+        <span>8. Response Efficiency</span>
+      </button>
+      <button onclick="changeTab('insights')" id="nav-insights" class="inline-flex items-center gap-1.5 justify-center whitespace-nowrap rounded-md px-3.5 py-1.5 text-xs font-semibold transition-all text-blue-650 font-bold">
+        <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-2-2h-5M3 21h18M3 10V3a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v7M3 21v-8a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v8"/></svg>
+        <span>9. Insights Dashboard</span>
+      </button>
+      <button onclick="changeTab('simulator')" id="nav-simulator" class="inline-flex items-center gap-1.5 justify-center whitespace-nowrap rounded-md px-3.5 py-1.5 text-xs font-semibold transition-all text-emerald-600 font-bold">
+        <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        <span>Generator</span>
+      </button>
+    </nav>
+  </header>
+
+  <main class="flex-1 flex flex-col p-6 max-w-[1500px] w-full mx-auto gap-6">
+
+    <!-- PORTFOLIO ARCHITECTURE CALLOUT BANNER -->
+    <div class="relative w-full rounded-lg border border-slate-200 bg-white p-4 pl-12 shadow-sm text-slate-800">
+      <svg class="absolute left-4 top-4 h-5 w-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+      <h5 class="mb-1 font-bold leading-none tracking-tight text-slate-900 text-xs uppercase tracking-wider font-mono">Agent Systems Engineering Pattern</h5>
+      <p class="text-xs text-slate-600 leading-relaxed mt-1">
+        This platform represents the complete agent engineering lifecycle: instrumenting backend components via `@traceable` decorators, launching and executing workflow graphs, tracing latencies, running automated judge evaluations, auditing prompt variants over offline datasets, and deploying analyzers to eradicate semantic redundancies inside massive token pipelines.
+      </p>
+    </div>
+
+    <!-- TAB 1: INSTRUMENTATION EXPLORER -->
+    <div id="tab-instrumentation-view" class="space-y-6">
+      
+      <!-- Architectural Concept Map -->
+      <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div class="flex items-center gap-2 mb-3">
+          <svg class="h-5 w-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+          <h3 class="text-sm font-bold text-slate-900">Concept Map: The Complete Agent Lifecycle Loop</h3>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-6 gap-4 text-xs">
+          <div class="bg-blue-50/50 border border-blue-100 p-3 rounded-lg">
+            <span class="font-bold text-blue-800 block mb-0.5">1. Instrumentation</span>
+            <p class="text-slate-600 text-[11px]">Decorate target functions with <code>@traceable</code> code hooks.</p>
+          </div>
+          <div class="bg-slate-50 border border-slate-100 p-3 rounded-lg">
+            <span class="font-bold text-slate-800 block mb-0.5">2. Execution</span>
+            <p class="text-slate-600 text-[11px]">Run graphs in the interactive Execution Playground.</p>
+          </div>
+          <div class="bg-slate-50 border border-slate-100 p-3 rounded-lg">
+            <span class="font-bold text-slate-800 block mb-0.5">3. Observability</span>
+            <p class="text-slate-600 text-[11px]">Inspect physical latency waterfalls and context tokens.</p>
+          </div>
+          <div class="bg-slate-50 border border-slate-100 p-3 rounded-lg">
+            <span class="font-bold text-slate-800 block mb-0.5">4. Evaluation</span>
+            <p class="text-slate-600 text-[11px]">Monitor semantic drift using LLM-as-a-Judge evaluators.</p>
+          </div>
+          <div class="bg-slate-50 border border-slate-100 p-3 rounded-lg">
+            <span class="font-bold text-slate-800 block mb-0.5">5. Analytics</span>
+            <p class="text-slate-600 text-[11px]">Analyze aggregate user sentiment and failure modes.</p>
+          </div>
+          <div class="bg-slate-50 border border-slate-100 p-3 rounded-lg">
+            <span class="font-bold text-slate-800 block mb-0.5">6. Optimization</span>
+            <p class="text-slate-600 text-[11px]">Eradicate token waste, optimizing prompts in real-time.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Left: Code Playground -->
+        <div class="lg:col-span-6 flex flex-col gap-4">
+          <div class="rounded-xl border border-slate-200 bg-white shadow-sm flex flex-col">
+            <div class="p-6 border-b border-slate-100">
+              <h3 class="text-sm font-semibold text-slate-900">Python Instrumentation Source Code</h3>
+              <p class="text-xs text-slate-500 mt-1">Tracing is initialized by adding <code>@traceable</code> decorators to key functions. Select a function to trace outputs.</p>
+            </div>
+            
+            <div class="p-6 bg-slate-900 font-mono text-xs text-slate-300 leading-relaxed overflow-x-auto select-none rounded-b-xl relative">
+              <span class="absolute top-2 right-3 text-[10px] uppercase font-bold text-slate-500 tracking-widest font-sans">Python Sandbox</span>
+              
+              <div class="space-y-4">
+                <div class="p-2.5 rounded transition-all cursor-pointer hover:bg-slate-800/80" id="code-block-run_pipeline" onclick="selectInstrFunction('run_pipeline')"></div>
+                <div class="p-2.5 rounded transition-all cursor-pointer hover:bg-slate-800/80" id="code-block-format_prompt" onclick="selectInstrFunction('format_prompt')"></div>
+                <div class="p-2.5 rounded transition-all cursor-pointer hover:bg-slate-800/80" id="code-block-invoke_llm" onclick="selectInstrFunction('invoke_llm')"></div>
+                <div class="p-2.5 rounded transition-all cursor-pointer hover:bg-slate-800/80" id="code-block-parse_output" onclick="selectInstrFunction('parse_output')"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Execution Tree -->
+        <div class="lg:col-span-6 flex flex-col gap-6">
+          <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
+            <div>
+              <h3 class="text-sm font-semibold text-slate-900">Decorated Stack Visualization</h3>
+              <p class="text-xs text-slate-500 mt-1">Decorated functions compile automatically into spans. Click to analyze.</p>
+            </div>
+
+            <div class="space-y-2">
+              <div onclick="selectInstrFunction('run_pipeline')" id="stack-btn-run_pipeline" class="p-3 border rounded-lg cursor-pointer transition-all flex justify-between items-center bg-white border-slate-200">
+                <div class="flex items-center gap-2">
+                  <span class="font-mono text-xs text-blue-600 font-bold">@traceable</span>
+                  <span class="text-xs font-semibold text-slate-800">run_pipeline()</span>
+                </div>
+                <span class="text-[10px] font-mono text-slate-500">1835ms (Chain Root)</span>
+              </div>
+
+              <div class="ml-6 space-y-2 border-l border-slate-200 pl-4">
+                <div onclick="selectInstrFunction('format_prompt')" id="stack-btn-format_prompt" class="p-3 border rounded-lg cursor-pointer transition-all flex justify-between items-center bg-white border-slate-200">
+                  <div class="flex items-center gap-2">
+                    <span class="font-mono text-xs text-indigo-500">@traceable(run_type="prompt")</span>
+                    <span class="text-xs font-semibold text-slate-800">format_prompt()</span>
+                  </div>
+                  <span class="text-[10px] font-mono text-slate-500">20ms</span>
+                </div>
+
+                <div onclick="selectInstrFunction('invoke_llm')" id="stack-btn-invoke_llm" class="p-3 border rounded-lg cursor-pointer transition-all flex justify-between items-center bg-white border-slate-200">
+                  <div class="flex items-center gap-2">
+                    <span class="font-mono text-xs text-indigo-500">@traceable(run_type="llm")</span>
+                    <span class="text-xs font-semibold text-slate-800">invoke_llm()</span>
+                  </div>
+                  <span class="text-[10px] font-mono text-slate-500">1800ms</span>
+                </div>
+
+                <div onclick="selectInstrFunction('parse_output')" id="stack-btn-parse_output" class="p-3 border rounded-lg cursor-pointer transition-all flex justify-between items-center bg-white border-slate-200">
+                  <div class="flex items-center gap-2">
+                    <span class="font-mono text-xs text-indigo-500">@traceable</span>
+                    <span class="text-xs font-semibold text-slate-800">parse_output()</span>
+                  </div>
+                  <span class="text-[10px] font-mono text-slate-500">15ms</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm space-y-4" id="instrumentation-detail-panel"></div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- TAB 2: INTERACTIVE GRAPH PLAYGROUND -->
+    <div id="tab-playground-view" class="hidden space-y-6">
+      
+      <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
+          <svg class="h-5 w-5 text-blue-600 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+          Graph Execution Playground
+        </h2>
+        <p class="text-xs text-slate-500 mt-1 max-w-4xl">
+          Observability begins with live graph testing. The playground mimics the **LangSmith Runnable Playground**, executing workflow DAG structures directly inside the UI. Select a pre-compiled graph architecture, enter an input prompt, and execute the nodes dynamically.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Left Side: Configs & Graphs Selector -->
+        <div class="lg:col-span-5 space-y-4">
+          <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
+            <h3 class="text-sm font-semibold text-slate-900">Select Active Workflow Graph</h3>
+            
+            <div class="grid grid-cols-1 gap-2.5">
+              <div onclick="selectGraph('RetrievalGraph')" id="graph-btn-RetrievalGraph" class="p-3.5 border rounded-lg cursor-pointer transition-all flex justify-between items-center">
+                <div>
+                  <h4 class="text-xs font-bold text-slate-800">RetrievalGraph</h4>
+                  <p class="text-[10px] text-slate-500">Context matching & factual response synthesis</p>
+                </div>
+                <span class="inline-flex items-center rounded bg-blue-50 px-2 py-0.5 text-[9px] font-bold text-blue-700">RAG</span>
+              </div>
+
+              <div onclick="selectGraph('ResearchGraph')" id="graph-btn-ResearchGraph" class="p-3.5 border rounded-lg cursor-pointer transition-all flex justify-between items-center">
+                <div>
+                  <h4 class="text-xs font-bold text-slate-800">ResearchGraph</h4>
+                  <p class="text-[10px] text-slate-500">Multi-agent loops with critic feedback revision</p>
+                </div>
+                <span class="inline-flex items-center rounded bg-purple-50 px-2 py-0.5 text-[9px] font-bold text-purple-700">Multi-Agent</span>
+              </div>
+
+              <div onclick="selectGraph('ToolCallingGraph')" id="graph-btn-ToolCallingGraph" class="p-3.5 border rounded-lg cursor-pointer transition-all flex justify-between items-center">
+                <div>
+                  <h4 class="text-xs font-bold text-slate-800">ToolCallingGraph</h4>
+                  <p class="text-[10px] text-slate-500">Autonomous function call arguments router</p>
+                </div>
+                <span class="inline-flex items-center rounded bg-amber-50 px-2 py-0.5 text-[9px] font-bold text-amber-700">Sandbox</span>
+              </div>
+
+              <div onclick="selectGraph('EvaluationGraph')" id="graph-btn-EvaluationGraph" class="p-3.5 border rounded-lg cursor-pointer transition-all flex justify-between items-center">
+                <div>
+                  <h4 class="text-xs font-bold text-slate-800">EvaluationGraph</h4>
+                  <p class="text-[10px] text-slate-500">Autonomous alignment judge scoring inputs</p>
+                </div>
+                <span class="inline-flex items-center rounded bg-emerald-50 px-2 py-0.5 text-[9px] font-bold text-emerald-700">Judge</span>
+              </div>
+            </div>
+
+            <!-- Graph Input field -->
+            <div class="space-y-1.5 pt-2">
+              <label class="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Human Request Input</label>
+              <textarea id="playground-input-box" oninput="updatePlaygroundInput(this.value)" class="w-full bg-slate-50 border border-slate-200 text-xs rounded-lg p-3 h-24 focus:outline-none focus:border-slate-300 font-mono text-slate-700" placeholder="Type custom system parameter..."></textarea>
+            </div>
+
+            <button onclick="executeGraphPlayground()" id="playground-run-btn" class="w-full h-10 tracking-wider font-semibold bg-blue-600 text-white hover:bg-blue-700 flex items-center justify-center gap-2 rounded-lg text-xs transition-all shadow-sm">
+              <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              <span>EXECUTE PLAYGROUND RUN</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Right Side: Node DAG & Outputs -->
+        <div class="lg:col-span-7 space-y-4">
+          <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm space-y-5">
+            <div>
+              <h3 class="text-sm font-semibold text-slate-900">Dynamic Pipeline Execution Nodes</h3>
+              <p class="text-xs text-slate-500 mt-1">Watch nodes light up as states pass through operational execution checkpoints.</p>
+            </div>
+
+            <!-- Node DAG Map visualization -->
+            <div class="flex flex-wrap items-center justify-center gap-2 py-4 bg-slate-50 rounded-xl border border-slate-200/60" id="playground-dag-map">
+              <!-- dynamically mapped nodes -->
+            </div>
+
+            <!-- Unified Output Terminal -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="space-y-1.5">
+                <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider font-mono">Runtime Stream Logs</span>
+                <div id="playground-log-terminal" class="bg-slate-900 text-[10px] font-mono text-slate-300 p-4 rounded-lg h-44 overflow-y-auto space-y-2 border border-slate-800"></div>
+              </div>
+
+              <div class="space-y-1.5">
+                <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider font-mono">Generated Output Response</span>
+                <div id="playground-response-terminal" class="bg-white border border-slate-200 p-4 rounded-lg h-44 overflow-y-auto text-xs text-slate-700 leading-relaxed font-sans prose select-all border-l-4 border-l-blue-500"></div>
+              </div>
+            </div>
+
+            <!-- Retrieved Docs Inspector -->
+            <div id="playground-retrieved-docs-inspector" class="space-y-2 border-t border-slate-100 pt-4 hidden">
+              <span class="text-[10px] uppercase font-bold text-slate-450 tracking-wider block font-mono">Retrieved Context Docs (Similarity Match)</span>
+              <div id="playground-docs-injection-list" class="space-y-2"></div>
+            </div>
+
+            <div class="flex justify-end pt-2 border-t border-slate-150">
+              <button onclick="changeTab('explorer')" class="inline-flex items-center justify-center rounded-lg text-xs font-semibold transition-all border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:text-slate-900 h-9 px-4">
+                <span>View Raw Execution Spans</span>
+                <svg class="ml-1.5 h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- TAB 3: TRACES OVERVIEW -->
+    <div id="tab-dashboard-view" class="hidden space-y-6">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4" id="stats-grid"></div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <div class="lg:col-span-7 flex flex-col gap-4">
+          <div class="rounded-xl border border-slate-200 bg-white text-slate-950 shadow-sm flex-1">
+            <div class="flex flex-col space-y-1.5 p-6 border-b border-slate-100">
+              <h3 class="text-sm font-semibold text-slate-900">Active Trace Sessions</h3>
+              <p class="text-xs text-slate-500">Select any trace below to audit components & latency</p>
+            </div>
+
+            <div class="p-6 pt-4 space-y-3" id="dashboard-traces-container"></div>
+
+            <div class="flex items-center justify-between p-6 pt-0 border-t border-slate-100 mt-4 py-4 bg-slate-50/50 rounded-b-lg">
+              <span class="text-[10px] text-slate-400 font-semibold font-mono">Visual database synchronizer</span>
+              <button onclick="changeTab('explorer')" class="inline-flex items-center justify-center rounded-lg text-xs font-semibold transition-all border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:text-slate-900 h-8 px-3">
+                Explore Full Trace Trees <svg class="ml-1.5 h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="lg:col-span-5 flex flex-col">
+          <div class="rounded-xl border border-slate-200 bg-white text-slate-950 shadow-sm h-full flex flex-col justify-between">
+            <div class="flex flex-col space-y-1.5 p-6 border-b border-slate-100">
+              <h3 class="text-sm font-semibold leading-none tracking-tight text-slate-900 flex items-center gap-2">
+                <svg class="h-4 w-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                Key Telemetry Terms
+              </h3>
+              <p class="text-xs text-slate-500">A comprehensive glossary of modern LLM metrics</p>
+            </div>
+
+            <div class="p-6 pt-4 space-y-4">
+              <div class="flex gap-3 items-start p-3 bg-slate-50/60 rounded-lg border border-slate-200/60">
+                <span class="font-mono text-xs text-blue-600 font-bold">01</span>
+                <div>
+                  <h4 class="text-xs font-semibold text-slate-800">Trace Sequence</h4>
+                  <p class="text-[11px] text-slate-500 leading-relaxed mt-0.5">The root envelope encompassing all subsequent sub-tasks. Captures aggregate response parameters, execution path, inputs, and final generated output.</p>
+                </div>
+              </div>
+              <div class="flex gap-3 items-start p-3 bg-slate-50/60 rounded-lg border border-slate-200/60">
+                <span class="font-mono text-xs text-blue-600 font-bold">02</span>
+                <div>
+                  <h4 class="text-xs font-semibold text-slate-800">Transactional Spans</h4>
+                  <p class="text-[11px] text-slate-500 leading-relaxed mt-0.5">A singular unit of operational execution. Examples include semantic vector retrievals, database lookup queries, code interpreter sandbox calls, and LLM inferences.</p>
+                </div>
+              </div>
+              <div class="flex gap-3 items-start p-3 bg-slate-50/60 rounded-lg border border-slate-200/60">
+                <span class="font-mono text-xs text-blue-600 font-bold">03</span>
+                <div>
+                  <h4 class="text-xs font-semibold text-slate-800">LLM-as-a-Judge Evaluation</h4>
+                  <p class="text-[11px] text-slate-500 leading-relaxed mt-0.5">Automated verification routines assessing accuracy, helpfulness, and structural errors using secondary model prompts rather than expensive manual QA.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="p-6 pt-4 border-t border-slate-100 text-[10px] text-slate-400 font-mono">
+              TraceLens Diagnostics — Standard v4.0
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- TAB 4: WATERFALL TREE -->
+    <div id="tab-explorer-view" class="hidden grid grid-cols-1 lg:grid-cols-12 gap-6">
+      
+      <!-- Explorer Left: Tree hierarchy & Waterfall -->
+      <div class="lg:col-span-7 flex flex-col gap-6">
+        
+        <!-- Header overview of selected trace -->
+        <div class="rounded-xl border border-slate-200 bg-white text-slate-950 shadow-sm p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4" id="explorer-header-panel"></div>
+
+        <!-- Hierarchical Span List -->
+        <div class="rounded-xl border border-slate-200 bg-white text-slate-950 shadow-sm">
+          <div class="flex flex-col space-y-1.5 p-6 border-b border-slate-100">
+            <h3 class="text-sm font-semibold leading-none tracking-tight text-slate-900">Span Segment Hierarchy</h3>
+            <p class="text-xs text-slate-500">Click any execution block in the list to inspect its inputs, outputs, and system metadata</p>
+          </div>
+          <div class="p-6 pt-4 space-y-2" id="explorer-hierarchy-container"></div>
+        </div>
+
+        <!-- Waterfall Graph -->
+        <div class="rounded-xl border border-slate-200 bg-white text-slate-950 shadow-sm">
+          <div class="flex flex-col space-y-1.5 p-6 border-b border-slate-100">
+            <h3 class="text-sm font-semibold leading-none tracking-tight text-slate-900">Waterfall Latency Breakdown</h3>
+            <p class="text-xs text-slate-500">Visual timing of span execution overlapping. Identify computational bottlenecks quickly</p>
+          </div>
+          <div class="p-6 pt-4 space-y-4 font-mono text-[10px]" id="explorer-waterfall-container"></div>
+        </div>
+
+      </div>
+
+      <!-- Explorer Right: Span details inspector panel -->
+      <div class="lg:col-span-5 flex flex-col gap-6">
+        <div class="rounded-xl border border-slate-200 bg-white text-slate-950 shadow-sm sticky top-24" id="explorer-detail-panel"></div>
+      </div>
+
+    </div>
+
+    <!-- TAB 5: RAG INSPECTION -->
+    <div id="tab-retrieval-view" class="hidden space-y-6">
+      
+      <div class="rounded-xl border border-slate-200 bg-white text-slate-950 shadow-sm">
+        <div class="flex flex-col space-y-1.5 p-6">
+          <h3 class="text-sm font-semibold leading-none tracking-tight text-slate-900 flex items-center gap-2">
+            <svg class="h-4 w-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            Vector Database & Retrieval Inspection
+          </h3>
+          <p class="text-xs text-slate-500">Audit document chunk injections. Verify distance metrics, citation coordinates, and prompt synthesis relevance</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Left Query Matching -->
+        <div class="lg:col-span-4 flex flex-col gap-4">
+          <div class="rounded-xl border border-slate-200 bg-white text-slate-950 shadow-sm h-full">
+            <div class="flex flex-col space-y-1.5 p-6 border-b border-slate-100">
+              <h3 class="text-xs font-semibold leading-none uppercase tracking-wider text-slate-500 font-mono">Semantic Query Pipeline</h3>
+            </div>
+            <div class="p-6 pt-4 space-y-4">
+              <div class="bg-slate-50 p-3 rounded-lg border border-slate-200">
+                <span class="text-[9px] uppercase font-bold text-slate-400 font-mono">Source Request Prompt</span>
+                <p class="text-xs font-semibold text-slate-800 mt-1 italic">
+                  "pricing structure and seat management rules in LangSmith"
+                </p>
+              </div>
+
+              <div class="flex flex-col items-center py-2 text-slate-400">
+                <div class="w-px h-6 bg-slate-200"></div>
+                <div class="inline-flex items-center rounded-md border border-slate-200 bg-white px-2 py-0.5 text-[11px] font-semibold text-slate-600 font-mono my-1">text-embedding-3-small</div>
+                <div class="w-px h-6 bg-slate-200"></div>
+              </div>
+
+              <div class="bg-slate-50 p-3 rounded-lg border border-slate-200 space-y-2">
+                <span class="text-[9px] uppercase font-bold text-slate-400 font-mono">1536-Dimensional Coordinate Projection</span>
+                <div class="flex flex-wrap gap-1">
+                  <span class="text-[9px] font-mono bg-white border border-slate-200 px-1 py-0.5 text-slate-700 rounded">-0.045</span>
+                  <span class="text-[9px] font-mono bg-white border border-slate-200 px-1 py-0.5 text-slate-700 rounded">0.128</span>
+                  <span class="text-[9px] font-mono bg-white border border-slate-200 px-1 py-0.5 text-slate-700 rounded">-0.094</span>
+                  <span class="text-[9px] font-mono bg-white border border-slate-200 px-1 py-0.5 text-slate-700 rounded">0.221</span>
+                  <span class="text-[9px] font-mono bg-white border border-slate-200 px-1 py-0.5 text-slate-700 rounded">-0.118</span>
+                  <span class="text-[9px] font-mono bg-white border border-slate-200 px-1 py-0.5 text-slate-700 rounded">0.082</span>
+                  <span class="text-[9px] font-mono bg-white border border-slate-200 px-1 py-0.5 text-slate-700 rounded">0.045</span>
+                  <span class="text-[9px] font-mono bg-white border border-slate-200 px-1 py-0.5 text-slate-700 rounded">-0.162</span>
+                  <span class="text-[9px] font-mono bg-white border border-slate-200 px-1 py-0.5 text-slate-700 rounded">0.039</span>
+                  <span class="text-[9px] text-slate-400 font-mono self-center pl-1">... 1527 dims</span>
+                </div>
+              </div>
+
+              <div class="bg-blue-50/20 p-3 rounded-lg border border-blue-100 text-[10px] text-slate-600 leading-relaxed">
+                <p class="font-semibold text-blue-900 flex items-center gap-1 mb-1 font-mono">
+                  <svg class="h-3.5 w-3.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg> High-Dimensional Space
+                </p>
+                Cosine similarity is calculated across multidimensional projections to gauge context proximity. A value closer to 1.0 indicates perfect context mapping.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right matched document chunks -->
+        <div class="lg:col-span-8 flex flex-col">
+          <div class="rounded-xl border border-slate-200 bg-white text-slate-950 shadow-sm">
+            <div class="flex flex-col space-y-1.5 p-6 border-b border-slate-100 md:flex-row justify-between items-start md:items-center">
+              <div>
+                <h3 class="text-sm font-semibold leading-none tracking-tight text-slate-900">Injected Text Chunks</h3>
+                <p class="text-xs text-slate-500">Vector search output loaded directly into the LLM context prompt</p>
+              </div>
+              <span class="inline-flex items-center rounded-md border border-slate-200 bg-white px-2 py-0.5 text-xs font-semibold text-slate-600 font-mono">3 documents matching</span>
+            </div>
+
+            <div class="p-6 pt-4 space-y-4">
+              <div class="relative bg-slate-50/50 border border-slate-200 rounded-lg p-4 overflow-hidden pl-5">
+                <div class="absolute top-0 bottom-0 left-0 w-1 bg-blue-600"></div>
+                <div class="flex justify-between items-start mb-2.5">
+                  <span class="text-[10px] font-mono bg-white border border-slate-200 px-2 py-0.5 rounded text-slate-700">docs.langsmith.com/pricing-rules</span>
+                  <div class="flex items-center gap-1.5 text-[10px]">
+                    <span class="text-slate-400 font-semibold font-mono">Similarity:</span>
+                    <span class="font-bold font-mono text-xs text-emerald-600">95%</span>
+                  </div>
+                </div>
+                <p class="text-xs text-slate-700 leading-relaxed italic">"LangSmith pricing starts at a generous free tier of 5,000 runs per month, scaling to $39/month per seat or pay-as-you-go based on total spans tracked. For enterprise tiers with custom security compliance, users must coordinate with enterprise support channels."</p>
+              </div>
+
+              <div class="relative bg-slate-50/50 border border-slate-200 rounded-lg p-4 overflow-hidden pl-5">
+                <div class="absolute top-0 bottom-0 left-0 w-1 bg-blue-600"></div>
+                <div class="flex justify-between items-start mb-2.5">
+                  <span class="text-[10px] font-mono bg-white border border-slate-200 px-2 py-0.5 rounded text-slate-700">docs.langgraph.com/state-management</span>
+                  <div class="flex items-center gap-1.5 text-[10px]">
+                    <span class="text-slate-400 font-semibold font-mono">Similarity:</span>
+                    <span class="font-bold font-mono text-xs text-slate-500">89%</span>
+                  </div>
+                </div>
+                <p class="text-xs text-slate-700 leading-relaxed italic">"LangGraph is an open-source library for building multi-actor applications with state. Commercial deployment support is offered via LangGraph Cloud, integrated with LangSmith. All state nodes share centralized tracking configurations inside visual debuggers."</p>
+              </div>
+
+              <div class="relative bg-slate-50/50 border border-slate-200 rounded-lg p-4 overflow-hidden pl-5">
+                <div class="absolute top-0 bottom-0 left-0 w-1 bg-blue-600"></div>
+                <div class="flex justify-between items-start mb-2.5">
+                  <span class="text-[10px] font-mono bg-white border border-slate-200 px-2 py-0.5 rounded text-slate-700">blog.langchain.com/small-teams</span>
+                  <div class="flex items-center gap-1.5 text-[10px]">
+                    <span class="text-slate-400 font-semibold font-mono">Similarity:</span>
+                    <span class="font-bold font-mono text-xs text-slate-500">82%</span>
+                  </div>
+                </div>
+                <p class="text-xs text-slate-700 leading-relaxed italic">"For small teams, self-hosting LangGraph is free, but linking it directly to LangSmith ensures clean tracing, visual debugger support, and remote state exploration."</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- TAB 6: EVALUATION CENTER -->
+    <div id="tab-tokens-view" class="hidden space-y-6">
+      
+      <div class="rounded-xl border border-slate-200 bg-white text-slate-950 shadow-sm">
+        <div class="flex flex-col space-y-1.5 p-6">
+          <h3 class="text-sm font-semibold leading-none tracking-tight text-slate-900 flex items-center gap-2">
+            <svg class="h-4 w-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Automated LLM Alignment Evaluation (Online Judges)
+          </h3>
+          <p class="text-xs text-slate-500">Continuous guardrails scoring live spans for factual accuracy, hallucinations, and helpfulness metrics.</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Left proportions ratio chart -->
+        <div class="lg:col-span-8 flex flex-col gap-4">
+          <div class="rounded-xl border border-slate-200 bg-white text-slate-950 shadow-sm">
+            <div class="flex flex-col space-y-1.5 p-6 border-b border-slate-100">
+              <h3 class="text-xs font-semibold leading-none uppercase tracking-wider text-slate-400 font-mono">Continuous Quality Signals</h3>
+            </div>
+            <div class="p-6 pt-4 space-y-4">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="bg-slate-50 p-4 rounded-lg border border-slate-200 space-y-2">
+                  <div class="flex justify-between items-center text-xs">
+                    <span class="font-bold text-slate-700">Retrieval Grounding Score</span>
+                    <span class="font-mono font-bold text-emerald-600">96.3%</span>
+                  </div>
+                  <div class="h-2 bg-slate-200 rounded-full overflow-hidden">
+                    <div style="width: 96.3%" class="bg-emerald-500 h-full"></div>
+                  </div>
+                  <p class="text-[11px] text-slate-500 leading-relaxed mt-1">Verifies if every claims loop aligns directly with factual vectors.</p>
+                </div>
+
+                <div class="bg-slate-50 p-4 rounded-lg border border-slate-200 space-y-2">
+                  <div class="flex justify-between items-center text-xs">
+                    <span class="font-bold text-slate-700">Factual Accuracy Score</span>
+                    <span class="font-mono font-bold text-emerald-600">94.1%</span>
+                  </div>
+                  <div class="h-2 bg-slate-200 rounded-full overflow-hidden">
+                    <div style="width: 94.1%" class="bg-emerald-500 h-full"></div>
+                  </div>
+                  <p class="text-[11px] text-slate-500 leading-relaxed mt-1">Cross-references assertions against gold-standard test databases.</p>
+                </div>
+
+                <div class="bg-slate-50 p-4 rounded-lg border border-slate-200 space-y-2">
+                  <div class="flex justify-between items-center text-xs">
+                    <span class="font-bold text-slate-700">Hallucination Mitigation Barrier</span>
+                    <span class="font-mono font-bold text-emerald-600">98.2%</span>
+                  </div>
+                  <div class="h-2 bg-slate-200 rounded-full overflow-hidden">
+                    <div style="width: 98.2%" class="bg-emerald-500 h-full"></div>
+                  </div>
+                  <p class="text-[11px] text-slate-500 leading-relaxed mt-1">Isolates out-of-context additions or fabricated model metrics.</p>
+                </div>
+
+                <div class="bg-slate-50 p-4 rounded-lg border border-slate-200 space-y-2">
+                  <div class="flex justify-between items-center text-xs">
+                    <span class="font-bold text-slate-700">Semantic Relevance Quotient</span>
+                    <span class="font-mono font-bold text-blue-600">90.5%</span>
+                  </div>
+                  <div class="h-2 bg-slate-200 rounded-full overflow-hidden">
+                    <div style="width: 90.5%" class="bg-blue-500 h-full"></div>
+                  </div>
+                  <p class="text-[11px] text-slate-500 leading-relaxed mt-1">Audits answer suitability relative to the original user intent envelope.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right System Judge Prompts -->
+        <div class="lg:col-span-4 flex flex-col gap-4">
+          <div class="rounded-xl border border-slate-200 bg-white text-slate-950 shadow-sm h-full flex flex-col justify-between">
+            <div class="flex flex-col space-y-1.5 p-6 border-b border-slate-100">
+              <h3 class="text-xs font-semibold leading-none uppercase tracking-wider text-slate-400 font-mono">LLM-as-a-Judge Instructions</h3>
+            </div>
+
+            <div class="p-6 pt-4 flex-1">
+              <pre class="bg-slate-900 p-4 rounded-lg text-[9px] font-mono text-slate-300 border border-slate-800 whitespace-pre-wrap leading-relaxed max-h-[300px] overflow-y-auto">
+SYSTEM: You are a strict evaluative agent alignment judge.
+Compare raw MODEL output to the gold-standard GROUND_TRUTH context coordinates.
+
+Determine metric assertions:
+1. "grounding": scale (0.00 to 1.00)
+2. "hallucination_flagged": boolean
+3. "redundancy_ratio": percentage text duplicate
+
+Strict constraints: Do NOT project or assume claims lacking context backing.
+              </pre>
+            </div>
+
+            <div class="p-6 pt-4 border-t border-slate-100 text-[10px] text-slate-400 leading-relaxed flex items-start gap-1.5 bg-slate-50/50 rounded-b-lg">
+              <svg class="h-4 w-4 text-slate-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+              <span>Evaluating dynamically protects APIs from context drift during model updates.</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- TAB 7: RESPONSE OPTIMIZATION LAB (A vs B vs C) -->
+    <div id="tab-prompts-view" class="hidden space-y-6">
+      
+      <!-- Educational Concept Header -->
+      <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
+          <svg class="h-5 w-5 text-indigo-600 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+          Response Optimization & Offline Evaluation Suite
+        </h2>
+        <p class="text-xs text-slate-500 mt-1 max-w-4xl">
+          <strong>How do we balance agent performance with API expenditure?</strong> Offline evaluation benchmarks model pipelines over static datasets. Use this lab to compare Prompt Variants A, B, and C over multiple experiment cases. Scale the daily requests slider to forecast monthly operational cost optimization.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Left Side: Scenario Selector & Dynamic Financial Savings Estimator -->
+        <div class="lg:col-span-5 space-y-4">
+          
+          <!-- Test Dataset Selector -->
+          <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm space-y-3">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 font-mono">Dataset Experiment Cases</h3>
+            <p class="text-xs text-slate-500">Pick a test-case inquiry to inspect semantic differences side-by-side.</p>
+            <div class="grid grid-cols-1 gap-2" id="scenario-selector-container"></div>
+          </div>
+
+          <!-- Scalability Estimator Card -->
+          <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm space-y-4">
+            <div class="border-b border-slate-100 pb-2">
+              <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 font-mono">Daily Production Scalability Forecaster</h3>
+              <p class="text-[11px] text-slate-500 mt-0.5">Scale daily request counts to see aggregate token compression impact.</p>
+            </div>
+
+            <!-- Volume Slider -->
+            <div class="space-y-2">
+              <div class="flex justify-between text-xs font-mono font-semibold">
+                <span class="text-slate-600">Daily Requests Volume:</span>
+                <span id="slider-volume-lbl" class="text-blue-600 font-bold">100,000 / day</span>
+              </div>
+              <input type="range" min="10000" max="5000000" step="10000" value="100000" oninput="updateScaleSlider(this.value)" class="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600">
+            </div>
+
+            <!-- Dynamic Estimations Grid -->
+            <div class="grid grid-cols-2 gap-3.5 pt-2">
+              <div class="bg-blue-50/30 border border-blue-100 p-3 rounded-lg font-mono">
+                <span class="text-[9px] uppercase font-bold text-blue-900 block font-sans">Tokens Eliminated / Day</span>
+                <span id="scale-tokens-saved" class="text-base font-extrabold text-blue-800">--</span>
+              </div>
+              <div class="bg-emerald-50/30 border border-emerald-100 p-3 rounded-lg font-mono">
+                <span class="text-[9px] uppercase font-bold text-emerald-900 block font-sans">Spend Saved / Month</span>
+                <span id="scale-cost-saved" class="text-base font-extrabold text-emerald-700">--</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Semantic Auditing Panel -->
+          <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm space-y-3">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 font-mono">Semantic Redundancy Auditor</h3>
+            <div id="scenario-alerts-box" class="space-y-2"></div>
+          </div>
+
+        </div>
+
+        <!-- Right Side: Benchmarks & Side-by-Side Playground Output -->
+        <div class="lg:col-span-7 space-y-4">
+          
+          <!-- Variant Comparison Switcher Matrix -->
+          <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+              <div>
+                <h3 class="text-sm font-semibold text-slate-900">Active Variant Playground</h3>
+                <p class="text-xs text-slate-500 font-medium">Select Prompt A, B, or C to analyze details</p>
+              </div>
+              <div class="flex h-9 items-center justify-center rounded-lg bg-slate-100 p-1 text-slate-600 gap-1" id="prompt-variant-tab-container">
+                <!-- Javascript maps buttons inside here -->
+              </div>
+            </div>
+
+            <!-- Benchmark parameters values -->
+            <div class="grid grid-cols-4 gap-3 text-xs">
+              <div class="bg-slate-50 p-3 rounded-lg border border-slate-200">
+                <span class="text-[9px] text-slate-400 font-bold uppercase">Accuracy Score</span>
+                <div class="text-sm font-bold text-slate-800 mt-1" id="v-metric-accuracy">--</div>
+              </div>
+              <div class="bg-slate-50 p-3 rounded-lg border border-slate-200">
+                <span class="text-[9px] text-slate-400 font-bold uppercase">Prompt Tokens</span>
+                <div class="text-sm font-bold text-slate-800 mt-1" id="v-metric-ptokens">--</div>
+              </div>
+              <div class="bg-slate-50 p-3 rounded-lg border border-slate-200">
+                <span class="text-[9px] text-slate-400 font-bold uppercase">Completion Tokens</span>
+                <div class="text-sm font-bold text-slate-800 mt-1" id="v-metric-ctokens">--</div>
+              </div>
+              <div class="bg-slate-50 p-3 rounded-lg border border-slate-200">
+                <span class="text-[9px] text-slate-400 font-bold uppercase">Single-Run Cost</span>
+                <div class="text-sm font-bold text-emerald-600 mt-1" id="v-metric-cost">--</div>
+              </div>
+            </div>
+
+            <div class="space-y-3 pt-2">
+              <div>
+                <span class="text-[10px] uppercase font-bold text-slate-400 font-mono">Executed Prompt Template Input</span>
+                <div id="v-metric-prompt-text" class="bg-slate-900 p-3 rounded-lg text-xs text-indigo-300 font-mono mt-1 border border-slate-800 select-all leading-relaxed whitespace-pre-wrap"></div>
+              </div>
+
+              <div>
+                <span class="text-[10px] uppercase font-bold text-slate-400 font-mono">Generated Output</span>
+                <div id="v-metric-response-text" class="bg-white border border-slate-200 p-4 rounded-lg text-xs text-slate-700 font-sans mt-1 leading-relaxed whitespace-pre-wrap border-l-4 border-l-blue-500"></div>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- TAB 8: RESPONSE EFFICIENCY ANALYZER (NEW) -->
+    <div id="tab-analyzer-view" class="hidden space-y-6">
+      
+      <!-- Educational Concept Header -->
+      <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
+          <svg class="h-5 w-5 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="14"/></svg>
+          Response Efficiency Analyzer & Redundancy Detector
+        </h2>
+        <p class="text-xs text-slate-500 mt-1 max-w-4xl">
+          <strong>How do we prevent agent runaway loops and output redundancies?</strong> High-frequency agent pipelines frequently suffer from semantic duplication, repeating explanations inside multi-turn state contexts. This analyzer processes outputs, highlighting loops to calculate exact compression opportunities.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Left Side: Source select & wasted metrics -->
+        <div class="lg:col-span-5 space-y-4">
+          <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm space-y-4">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 font-mono">Select Output Corpus</h3>
+            
+            <div class="grid grid-cols-1 gap-2" id="redundancy-selector-container">
+              <!-- mapped buttons inside here -->
+            </div>
+
+            <!-- Aggregated Waste Metrics -->
+            <div class="grid grid-cols-2 gap-3.5 pt-2">
+              <div class="bg-red-50/40 border border-red-100 p-3.5 rounded-lg font-mono">
+                <span class="text-[9px] uppercase font-bold text-red-900 block font-sans">Semantic Bloat Wasted</span>
+                <span id="redundancy-stat-waste" class="text-base font-extrabold text-red-700">--</span>
+              </div>
+              <div class="bg-emerald-50/40 border border-emerald-100 p-3.5 rounded-lg font-mono">
+                <span class="text-[9px] uppercase font-bold text-emerald-900 block font-sans">Compacted Output Saving</span>
+                <span id="redundancy-stat-saving" class="text-base font-extrabold text-emerald-700">--</span>
+              </div>
+            </div>
+
+            <!-- Cost Scalability Waste block -->
+            <div class="bg-slate-50 p-4 border border-slate-200 rounded-lg space-y-2">
+              <span class="text-[10px] uppercase font-bold text-slate-400 font-mono tracking-wide">Macro Operational Impact</span>
+              <p class="text-xs text-slate-600 leading-relaxed font-sans">
+                Assuming an average query footprint of 100k daily runs, allowing duplicate concepts to ship unchecked wastes approximately <strong class="text-red-600 font-bold" id="redundancy-calc-macro">--</strong> monthly in useless LLM overhead.
+              </p>
+            </div>
+          </div>
+
+          <!-- Highlight repeats directory -->
+          <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm space-y-3">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 font-mono">Loop Anomaly directory</h3>
+            <p class="text-xs text-slate-500 mt-1">Identified duplicate concepts extracted from the unoptimized text block:</p>
+            <div id="redundancy-repeats-directory" class="space-y-2"></div>
+          </div>
+        </div>
+
+        <!-- Right Side: Interactive Redundancy Highlighter & Compression Animator -->
+        <div class="lg:col-span-7 flex flex-col">
+          <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm flex-1 flex flex-col justify-between space-y-4">
+            <div class="border-b border-slate-100 pb-3 flex justify-between items-center flex-wrap gap-2">
+              <div>
+                <h3 class="text-sm font-semibold text-slate-900">High-Contrast Semantic Highlighter</h3>
+                <p class="text-xs text-slate-500">Highlighted spans represent identified loop repetitions</p>
+              </div>
+              <button onclick="triggerCompactAnimation()" id="redundancy-compact-btn" class="inline-flex items-center justify-center rounded-lg text-xs font-semibold transition-all bg-slate-900 text-white hover:bg-slate-800 h-9 px-4">
+                Execute Token Compactor
+              </button>
+            </div>
+
+            <!-- Live highlight render field -->
+            <div class="flex-1 flex flex-col pt-2 min-h-[300px]">
+              <div id="redundancy-viewer-panel" class="p-5 rounded-lg border border-slate-200 bg-slate-50 text-xs text-slate-700 leading-relaxed font-sans font-medium select-all transition-all duration-300"></div>
+            </div>
+
+            <div class="p-3 bg-blue-50/40 border border-blue-100 rounded-lg text-[10px] text-slate-600 leading-relaxed font-sans">
+              <strong>Optimization rule:</strong> By utilizing prompt heuristics like "State your assertions only once," engineers reduce response verbosities from 80+ tokens to direct, bullet-focused structures.
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- TAB 9: INSIGHTS & TRACE ANALYTICS -->
+    <div id="tab-insights-view" class="hidden space-y-6">
+      
+      <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
+            <svg class="h-5 w-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-2-2h-5M3 21h18M3 10V3a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v7M3 21v-8a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v8"/></svg>
+            System-Level Population Insights
+          </h2>
+          <p class="text-xs text-slate-500 mt-1 max-w-2xl">
+            Go beyond isolated run traces. The Insights Agent analyzes populations across user requests to compile failure classifications, topics, sentiment metrics, and custom metrics.
+          </p>
+        </div>
+        <button onclick="changeTab('simulator')" class="inline-flex items-center justify-center rounded-lg text-xs font-semibold transition-all bg-blue-600 text-white hover:bg-blue-700 h-9 px-4">
+          Compile Multi-Trace Sim
+        </button>
+      </div>
+
+      <!-- Live metrics grid recalculated dynamically -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" id="insights-aggregate-grid"></div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Left: Reports list -->
+        <div class="lg:col-span-7 space-y-4">
+          <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
+            <div>
+              <h3 class="text-sm font-semibold text-slate-900">AI-Generated Population Reports</h3>
+              <p class="text-xs text-slate-500 mt-1">Aggregated reviews compiled periodically by analyzing user query datasets.</p>
+            </div>
+
+            <div class="space-y-4" id="ai-insights-reports-container"></div>
+          </div>
+        </div>
+
+        <!-- Right: Trace Population Analytics charts -->
+        <div class="lg:col-span-5 space-y-6">
+          
+          <!-- Sentiment visual distributions -->
+          <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
+            <div>
+              <h3 class="text-sm font-semibold text-slate-900">Aggregate User Sentiment Chart</h3>
+              <p class="text-xs text-slate-500 mt-1">Categorical score ratio tracking relative satisfaction benchmarks</p>
+            </div>
+
+            <div class="space-y-3">
+              <div class="h-4 rounded-full overflow-hidden flex bg-slate-100" id="sentiment-ratio-bar"></div>
+              
+              <div class="flex justify-between text-[10px] font-mono font-semibold text-slate-500">
+                <span class="flex items-center gap-1"><span class="w-2 h-2 rounded bg-emerald-500"></span> Positive</span>
+                <span class="flex items-center gap-1"><span class="w-2 h-2 rounded bg-slate-350"></span> Neutral</span>
+                <span class="flex items-center gap-1"><span class="w-2 h-2 rounded bg-rose-500"></span> Negative</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Flagged failure patterns -->
+          <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
+            <div>
+              <h3 class="text-sm font-semibold text-slate-900">Failure-Mode & Error Clustering</h3>
+              <p class="text-xs text-slate-500 mt-1">Discovered anomalies and alert counts inside production systems</p>
+            </div>
+
+            <div class="space-y-2 text-xs text-slate-600 font-medium font-mono" id="flagged-patterns-container"></div>
+          </div>
+
+          <!-- Custom attributes config panel -->
+          <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
+            <div>
+              <h3 class="text-sm font-semibold text-slate-900">Custom Workspace Attributes</h3>
+              <p class="text-xs text-slate-500 mt-1">Extend trace schemas with context metadata tags. Registered configurations instantly show up inside simulated inputs.</p>
+            </div>
+
+            <form onsubmit="addCustomAttribute(event)" class="space-y-3 font-sans text-xs">
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <span class="text-[10px] text-slate-500 font-bold block mb-1">Attribute Name</span>
+                  <input type="text" id="new-attr-name" required placeholder="e.g. escalation_required" class="w-full bg-slate-50 border border-slate-200 p-2 rounded focus:outline-none text-xs">
+                </div>
+                <div>
+                  <span class="text-[10px] text-slate-500 font-bold block mb-1">Data Type</span>
+                  <select id="new-attr-type" class="w-full bg-slate-50 border border-slate-200 p-2 rounded focus:outline-none text-xs">
+                    <option value="Boolean">Boolean (true/false)</option>
+                    <option value="Categorical">Categorical String</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <span class="text-[10px] text-slate-500 font-bold block mb-1">Property Description</span>
+                <input type="text" id="new-attr-desc" placeholder="e.g. Flagged for escalation" class="w-full bg-slate-50 border border-slate-200 p-2 rounded focus:outline-none text-xs">
+              </div>
+
+              <button type="submit" class="w-full h-8 bg-slate-900 text-white font-semibold text-xs rounded transition hover:bg-slate-800">
+                Register Custom Attribute
+              </button>
+            </form>
+
+            <div class="space-y-2.5 pt-2" id="custom-attributes-list"></div>
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- TAB 10: FLOW SIMULATOR -->
+    <div id="tab-simulator-view" class="hidden grid grid-cols-1 lg:grid-cols-12 gap-6">
+      
+      <!-- Controls Panel -->
+      <div class="lg:col-span-5 flex flex-col gap-4">
+        <div class="rounded-xl border border-slate-200 bg-white text-slate-950 shadow-sm">
+          <div class="flex flex-col space-y-1.5 p-6 border-b border-slate-100">
+            <h3 class="text-sm font-semibold leading-none tracking-tight text-slate-900 flex items-center gap-2">
+              <svg class="h-4 w-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              Interactive Agent Pipeline Simulator
+            </h3>
+            <p class="text-xs text-slate-500">Configure step nodes, write query tests, and run simulation compiling custom trace paths</p>
+          </div>
+
+          <div class="p-6 pt-4 space-y-4">
+            <div>
+              <label class="text-[10px] uppercase font-bold text-slate-400 font-mono">User Inquiry Input</label>
+              <input type="text" oninput="updateSimQuery(this.value)" value="Explain RAG retrieval issues." class="w-full bg-white border border-slate-200 text-xs text-slate-800 rounded-lg p-2.5 font-mono focus:border-slate-400 focus:outline-none mt-1">
+            </div>
+
+            <div class="space-y-3 bg-slate-55 p-4 rounded-lg border border-slate-200">
+              <p class="text-[10px] uppercase tracking-wider text-slate-500 font-bold font-mono mb-1">Select Execution Steps</p>
+
+              <label class="flex items-start gap-3 cursor-pointer">
+                <input type="checkbox" checked onclick="updateSimStep('planner')" class="rounded border-slate-200 bg-white text-blue-600 focus:ring-0 mt-0.5">
+                <div>
+                  <p class="text-xs font-semibold text-slate-800">Planner & Decomposing Router</p>
+                  <p class="text-[10px] text-slate-400">Maps execution routes and schedules tasks</p>
+                </div>
+              </label>
+
+              <label class="flex items-start gap-3 cursor-pointer">
+                <input type="checkbox" checked onclick="updateSimStep('retriever')" class="rounded border-slate-200 bg-white text-blue-600 focus:ring-0 mt-0.5">
+                <div>
+                  <p class="text-xs font-semibold text-slate-800">Semantic Knowledge Retriever</p>
+                  <p class="text-[10px] text-slate-400">Injects vector database document context</p>
+                </div>
+              </label>
+
+              <label class="flex items-start gap-3 cursor-pointer">
+                <input type="checkbox" onclick="updateSimStep('tool')" class="rounded border-slate-200 bg-white text-blue-600 focus:ring-0 mt-0.5">
+                <div>
+                  <p class="text-xs font-semibold text-slate-800">Python Sandbox / Action Tool</p>
+                  <p class="text-[10px] text-slate-400">Executes computations or processes logic</p>
+                </div>
+              </label>
+
+              <label class="flex items-start gap-3 cursor-pointer">
+                <input type="checkbox" checked onclick="updateSimStep('evaluator')" class="rounded border-slate-200 bg-white text-blue-600 focus:ring-0 mt-0.5">
+                <div>
+                  <p class="text-xs font-semibold text-slate-800">LLM-as-a-Judge Evaluation Node</p>
+                  <p class="text-[10px] text-slate-400">Synthesizes final alignment and safety scores</p>
+                </div>
+              </label>
+            </div>
+
+            <!-- Custom attribute simulation properties selection -->
+            <div class="space-y-3 border border-slate-100 p-4 rounded-lg bg-slate-50/50">
+              <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider font-mono">Injected Trace Attribute Values</span>
+              <div id="simulator-attributes-inject-list" class="space-y-2.5"></div>
+            </div>
+
+            <button onclick="triggerSimulation()" id="btn-run-simulation" class="w-full h-10 tracking-wider font-semibold bg-slate-900 text-white hover:bg-slate-800 flex items-center justify-center gap-2 rounded-lg text-xs transition-all shadow-sm">
+              <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              <span>EXECUTE CUSTOM SIMULATION</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Simulator Output Terminal -->
+      <div class="lg:col-span-7 flex flex-col">
+        <div class="rounded-xl border border-slate-200 bg-white text-slate-950 shadow-sm h-full flex flex-col justify-between">
+          <div class="flex flex-col space-y-1.5 p-6 border-b border-slate-100">
+            <h3 class="text-sm font-semibold leading-none tracking-tight text-slate-900 flex items-center gap-2">
+              <svg class="h-4 w-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+              Active Execution Streams
+            </h3>
+            <p class="text-xs text-slate-500">Watch structural span compilations trigger dynamically</p>
+          </div>
+
+          <div class="p-6 pt-4 flex-1 flex flex-col justify-between min-h-[280px]">
+            <div id="sim-log-terminal" class="space-y-2.5 font-mono text-[11px] text-slate-700 max-h-[300px] overflow-y-auto"></div>
+
+            <div id="sim-progress-block" class="hidden space-y-1.5 pt-4 border-t border-slate-200">
+              <div class="flex justify-between text-[9px] text-slate-400 font-mono">
+                <span>Compiling spans payload:</span>
+                <span id="sim-progress-lbl">0%</span>
+              </div>
+              <div class="h-1 bg-slate-100 rounded-full overflow-hidden">
+                <div id="sim-progress-bar" style="width: 0%" class="bg-blue-600 h-full transition-all duration-300"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="p-6 pt-4 border-t border-slate-100 text-[10px] text-slate-400 font-mono leading-none bg-slate-50/50 rounded-b-lg">
+            ✔ Completed simulation runs are compiled and loaded directly into trace telemetry lists.
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="border-t border-slate-200 bg-white p-6 mt-12 text-center text-slate-500 space-y-2">
+    <p class="text-xs leading-relaxed max-w-4xl mx-auto">
+      <strong>Agent Engineering Lab</strong> is a simulated Educational sandbox showcasing agent observability concepts including Spans, Trace hierarchies, RAG lookups, automated alignment evaluation pipelines, custom attributes, and Insights agent reports.
+    </p>
+  </footer>
+
+  <!-- RENDER CONTROLLER -->
+  <script>
+    function render() {
+      // 1. NAV TABS ACTIVE STYLING
+      const tabs = ['instrumentation', 'playground', 'dashboard', 'explorer', 'retrieval', 'tokens', 'prompts', 'analyzer', 'insights', 'simulator'];
+      tabs.forEach(tab => {
+        const btn = document.getElementById(`nav-${tab}`);
+        const view = document.getElementById(`tab-${tab}-view`);
+        if (state.activeTab === tab) {
+          btn.className = "inline-flex items-center gap-1.5 justify-center whitespace-nowrap rounded-md px-3.5 py-1.5 text-xs font-semibold transition-all bg-white text-blue-600 shadow-sm border border-slate-200/50";
+          if (view) view.classList.remove('hidden');
+        } else {
+          btn.className = "inline-flex items-center gap-1.5 justify-center whitespace-nowrap rounded-md px-3.5 py-1.5 text-xs font-semibold transition-all text-slate-600 hover:text-slate-900 hover:bg-slate-200/40";
+          if (view) view.classList.add('hidden');
+        }
+      });
+
+      // 1.5 INSTRUMENTATION EXPLORER RENDERS
+      if (state.activeTab === 'instrumentation') {
+        const activeKey = state.selectedInstrFunction;
+        const info = instrumentationSpans[activeKey];
+
+        // Highlight code snippets in editor
+        Object.keys(instrumentationSpans).forEach(key => {
+          const block = document.getElementById(`code-block-${key}`);
+          const btn = document.getElementById(`stack-btn-${key}`);
+          
+          block.innerHTML = instrumentationSpans[key].codeSnippet;
+          if (key === activeKey) {
+            block.className = "p-2.5 rounded transition-all cursor-pointer bg-slate-850 border-l-2 border-l-blue-500";
+            btn.className = "p-3 border rounded-lg cursor-pointer transition-all flex justify-between items-center bg-blue-50/50 border-blue-400 shadow-sm";
+          } else {
+            block.className = "p-2.5 rounded transition-all cursor-pointer hover:bg-slate-800/80";
+            btn.className = "p-3 border rounded-lg cursor-pointer transition-all flex justify-between items-center bg-white border-slate-200";
+          }
+        });
+
+        // Detail Inspector Card Render
+        const detailHtml = `
+          <div class="border-b border-slate-100 pb-3">
+            <span class="text-[10px] uppercase font-bold text-blue-600 tracking-wider font-mono">Dynamic Span Target</span>
+            <h4 class="text-sm font-bold text-slate-900 mt-1">${info.name}</h4>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3.5">
+            <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200/60 font-mono text-[11px]">
+              <span class="text-[10px] text-slate-400 block uppercase font-sans">Run Type</span>
+              <span class="font-bold text-slate-700 tracking-wide uppercase">${info.runType}</span>
+            </div>
+            <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200/60 font-mono text-[11px]">
+              <span class="text-[10px] text-slate-400 block uppercase font-sans">Decorator</span>
+              <span class="font-bold text-blue-600">${info.decorator}</span>
+            </div>
+            <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200/60 font-mono text-[11px]">
+              <span class="text-[10px] text-slate-400 block uppercase font-sans">Observed Latency</span>
+              <span class="font-bold text-slate-700">${info.latency} ms</span>
+            </div>
+            <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200/60 font-mono text-[11px]">
+              <span class="text-[10px] text-slate-400 block uppercase font-sans">Token Volume</span>
+              <span class="font-bold text-slate-700">${info.tokens} tokens</span>
+            </div>
+          </div>
+
+          <div class="space-y-3 pt-2">
+            <div>
+              <span class="text-[10px] uppercase font-bold text-slate-400 font-mono font-semibold">Payload Input</span>
+              <pre class="bg-slate-900 p-3 rounded-lg text-[10px] text-blue-200 font-mono mt-1 border border-slate-800 overflow-x-auto whitespace-pre-wrap">${info.input}</pre>
+            </div>
+            <div>
+              <span class="text-[10px] uppercase font-bold text-slate-400 font-mono font-semibold">Payload Output</span>
+              <pre class="bg-slate-900 p-3 rounded-lg text-[10px] text-emerald-200 font-mono mt-1 border border-slate-800 overflow-x-auto whitespace-pre-wrap">${info.output}</pre>
+            </div>
+          </div>
+        `;
+        document.getElementById('instrumentation-detail-panel').innerHTML = detailHtml;
+      }
+
+      // 1.8 GRAPH PLAYGROUND RENDER
+      if (state.activeTab === 'playground') {
+        const graphKey = state.selectedGraph;
+        const workflow = graphWorkflows[graphKey];
+
+        // Highlight selected graph card
+        Object.keys(graphWorkflows).forEach(key => {
+          const btn = document.getElementById(`graph-btn-${key}`);
+          if (key === graphKey) {
+            btn.className = "p-3.5 border rounded-lg cursor-pointer transition-all flex justify-between items-center bg-blue-50/50 border-blue-400 shadow-sm";
+          } else {
+            btn.className = "p-3.5 border rounded-lg cursor-pointer transition-all flex justify-between items-center bg-white border-slate-200 hover:border-slate-300";
+          }
+        });
+
+        // Set value of textarea input
+        document.getElementById('playground-input-box').value = state.playgroundInput;
+
+        // Populate DAG map nodes
+        let dagHtml = '';
+        workflow.nodes.forEach((node, idx) => {
+          let stateClass = "border-slate-200 bg-white text-slate-500";
+          if (idx < state.playgroundProgressNodeIndex) {
+            // Completed node
+            stateClass = "border-emerald-300 bg-emerald-50 text-emerald-700 font-semibold";
+          } else if (idx === state.playgroundProgressNodeIndex) {
+            // Active Node pulsing
+            stateClass = "border-blue-500 bg-blue-50 text-blue-700 font-extrabold animate-pulse ring-2 ring-blue-200";
+          }
+
+          dagHtml += `
+            <div class="px-3.5 py-2 border rounded-lg text-[11px] font-mono shadow-sm transition-all ${stateClass}">
+              ${node}
+            </div>
+          `;
+
+          // Connector arrow
+          if (idx < workflow.nodes.length - 1) {
+            dagHtml += `
+              <div class="text-slate-400 font-bold font-mono">→</div>
+            `;
+          }
+        });
+        document.getElementById('playground-dag-map').innerHTML = dagHtml;
+
+        // Render logs
+        const logBox = document.getElementById('playground-log-terminal');
+        if (state.playgroundLog.length === 0) {
+          logBox.innerHTML = `<span class="text-slate-500 font-mono">Wait... Trigger Graph Run above to begin streaming spans.</span>`;
+        } else {
+          logBox.innerHTML = state.playgroundLog.map(log => `<div>❖ ${log}</div>`).join('');
+          logBox.scrollTop = logBox.scrollHeight; // autoscroll
+        }
+
+        // Render response output
+        const responseBox = document.getElementById('playground-response-terminal');
+        if (state.playgroundProgressNodeIndex === workflow.nodes.length) {
+          responseBox.innerText = workflow.mockResponse;
+        } else if (state.playgroundIsRunning) {
+          responseBox.innerHTML = `<span class="text-blue-600 animate-pulse font-mono">Generative completion streaming...</span>`;
+        } else {
+          responseBox.innerHTML = `<span class="text-slate-400 font-mono">No active terminal context.</span>`;
+        }
+
+        // Render matched documents if RetrievalGraph is selected
+        const docContainer = document.getElementById('playground-retrieved-docs-inspector');
+        if (workflow.documents.length > 0) {
+          docContainer.classList.remove('hidden');
+          let docsHtml = '';
+          workflow.documents.forEach(doc => {
+            docsHtml += `
+              <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg text-xs space-y-1.5">
+                <div class="flex justify-between text-[10px] font-semibold text-slate-500">
+                  <span>Source: ${doc.source}</span>
+                  <span class="text-emerald-600 font-mono font-bold">Similarity: ${Math.round(doc.relevance * 100)}%</span>
+                </div>
+                <p class="text-slate-700 italic">"${doc.text}"</p>
+              </div>
+            `;
+          });
+          document.getElementById('playground-docs-injection-list').innerHTML = docsHtml;
+        } else {
+          docContainer.classList.add('hidden');
+        }
+      }
+
+      // 2. INSIGHTS ENGINE ACTIVE RENDER
+      if (state.activeTab === 'insights') {
+        const total = traces.length;
+        const avgLat = Math.round(traces.reduce((acc, t) => acc + t.latency, 0) / total);
+        const failingCount = traces.filter(t => t.status === "error" || t.evalScore < 60).length;
+        const failedRetrievalCount = traces.filter(t => t.attributes && t.attributes.retrieval_success === false).length;
+        const escalationCount = traces.filter(t => t.attributes && t.attributes.escalation_required === true).length;
+        
+        // Calculate sentiment proportions
+        const positiveCount = traces.filter(t => t.attributes && t.attributes.user_sentiment === 'positive').length;
+        const neutralCount = traces.filter(t => t.attributes && t.attributes.user_sentiment === 'neutral').length;
+        const negativeCount = traces.filter(t => t.attributes && t.attributes.user_sentiment === 'negative').length;
+        
+        const posPct = total > 0 ? Math.round((positiveCount / total) * 100) : 0;
+        const neuPct = total > 0 ? Math.round((neutralCount / total) * 100) : 0;
+        const negPct = total > 0 ? 100 - (posPct + neuPct) : 0;
+
+        // Render top aggregates grid
+        const aggHtml = `
+          <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 font-mono">Trace Count Population</p>
+            <h4 class="text-2xl font-bold tracking-tight text-slate-900 mt-1">${total} Traces</h4>
+            <p class="text-[10px] text-slate-400 mt-1">Aggregate population scan</p>
+          </div>
+          <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 font-mono">Frustration Fallbacks</p>
+            <h4 class="text-2xl font-bold tracking-tight text-amber-600 mt-1">${failingCount} Traces</h4>
+            <p class="text-[10px] text-slate-400 mt-1">Regressions/low eval score</p>
+          </div>
+          <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 font-mono">Retrieval Failure Rate</p>
+            <h4 class="text-2xl font-bold tracking-tight text-rose-600 mt-1">${failedRetrievalCount} Traces</h4>
+            <p class="text-[10px] text-slate-400 mt-1">Context mismatch blocks</p>
+          </div>
+          <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 font-mono">Required Escalations</p>
+            <h4 class="text-2xl font-bold tracking-tight text-blue-600 mt-1">${escalationCount} Traces</h4>
+            <p class="text-[10px] text-slate-400 mt-1">Route matching thresholds</p>
+          </div>
+        `;
+        document.getElementById('insights-aggregate-grid').innerHTML = aggHtml;
+
+        // Render population sentiment bar
+        document.getElementById('sentiment-ratio-bar').innerHTML = `
+          <div style="width: ${posPct}%" class="bg-emerald-500 h-full transition-all" title="Positive sentiment"></div>
+          <div style="width: ${neuPct}%" class="bg-slate-350 h-full transition-all" title="Neutral sentiment"></div>
+          <div style="width: ${negPct}%" class="bg-rose-500 h-full transition-all" title="Negative sentiment"></div>
+        `;
+
+        // Render dynamic insights reports (AI summary results based on populations)
+        const activeTopics = traces.reduce((acc, t) => {
+          const topic = t.attributes?.topic || 'general';
+          acc[topic] = (acc[topic] || 0) + 1;
+          return acc;
+        }, {});
+
+        const commonTopicText = Object.keys(activeTopics).map(top => `${top} (${activeTopics[top]} queries)`).join(', ');
+
+        const insightsReports = [
+          {
+            title: "Feature Topics & Usage Patterns",
+            categories: ["Usage Analysis", "Concept Coverage"],
+            frequency: `${Math.round((traces.filter(t => t.attributes?.topic === 'pricing').length / total) * 100)}% of Traces`,
+            trend: "up",
+            trendText: "+12% week over week",
+            summary: `Observability analytics scan indicates dominant user inquiries are targeting: ${commonTopicText || 'unclassified queries'}. Integration rules and seat tiers compose the primary diagnostic density blocks.`
+          },
+          {
+            title: "Frustration & Fallback Analysis",
+            categories: ["Error Analysis", "Resiliency"],
+            frequency: `${Math.round((failingCount / total) * 100)}% of Traces`,
+            trend: "down",
+            trendText: "Error rate stable",
+            summary: "SQL server latency and port connection boundaries continue to serve as the chief cause of fatal pipeline exceptions. Error recovery handler block traces illustrate that automated graceful apology synthesis routes correctly on fallback sequences."
+          },
+          {
+            title: "Happy Users & Sentiment Audit",
+            categories: ["User Satisfaction", "Alignment"],
+            frequency: `${posPct}% Satisfied`,
+            trend: "up",
+            trendText: "+4.5% positive rating",
+            summary: `Semantic alignments and grounded facts match desired benchmarks. Positive sentiment tracks strongly at ${posPct}% due to rapid generative completion timelines.`
+          }
+        ];
+
+        let reportsHtml = '';
+        insightsReports.forEach(rep => {
+          reportsHtml += `
+            <div class="border border-slate-100 rounded-xl p-4 bg-slate-50/40 hover:bg-slate-50 transition-all space-y-3">
+              <div class="flex justify-between items-start flex-wrap gap-2">
+                <div class="space-y-1">
+                  <h4 class="text-sm font-bold text-slate-800">${rep.title}</h4>
+                  <div class="flex flex-wrap gap-1.5">
+                    ${rep.categories.map(cat => `<span class="inline-flex items-center rounded bg-slate-100 px-1.5 py-0.5 text-[9px] font-mono font-medium text-slate-600">${cat}</span>`).join('')}
+                  </div>
+                </div>
+                <div class="text-right">
+                  <span class="text-xs font-bold text-slate-900 block">${rep.frequency}</span>
+                  <span class="text-[10px] text-emerald-600 font-semibold font-mono">${rep.trendText}</span>
+                </div>
+              </div>
+              <p class="text-xs text-slate-600 leading-relaxed font-sans">${rep.summary}</p>
+            </div>
+          `;
+        });
+        document.getElementById('ai-insights-reports-container').innerHTML = reportsHtml;
+
+        // Render dynamic flagged pattern statistics
+        const hallucinationCount = traces.filter(t => t.attributes && t.attributes.hallucination_detected === true).length;
+        const alignmentFailureCount = traces.filter(t => t.evalScore < 70).length;
+
+        document.getElementById('flagged-patterns-container').innerHTML = `
+          <div class="flex justify-between items-center">
+            <span>Critical SQL/DB Failure Trends</span>
+            <span class="font-mono font-bold text-rose-600">${traces.filter(t => t.status === 'error').length} events</span>
+          </div>
+          <div class="flex justify-between items-center pt-1">
+            <span>Hallucinations Detected</span>
+            <span class="font-mono font-bold text-slate-700">${hallucinationCount} occurrences</span>
+          </div>
+          <div class="flex justify-between items-center pt-1">
+            <span>Critical Low Alignment Evaluator Alerts</span>
+            <span class="font-mono font-bold text-slate-700">${alignmentFailureCount} occurrences</span>
+          </div>
+        `;
+
+        // Render custom attributes listing column
+        let attributesHtml = '';
+        customAttributes.forEach(attr => {
+          attributesHtml += `
+            <div class="p-3 border border-slate-100 rounded-lg bg-slate-50/50 hover:bg-white transition-all space-y-1">
+              <div class="flex justify-between items-center">
+                <span class="font-mono text-xs font-bold text-slate-700">${attr.name}</span>
+                <span class="inline-flex items-center rounded-md border border-slate-200 bg-white px-1.5 py-0.5 text-[10px] font-medium text-slate-600 font-mono">${attr.type}</span>
+              </div>
+              <p class="text-[11px] text-slate-500">${attr.description}</p>
+            </div>
+          `;
+        });
+        document.getElementById('custom-attributes-list').innerHTML = attributesHtml;
+      }
+
+      // 3. DASHBOARD TAB INJECTION
+      if (state.activeTab === 'dashboard') {
+        const totalTracesCount = traces.length;
+        const avgLatency = Math.round(traces.reduce((acc, t) => acc + t.latency, 0) / totalTracesCount);
+        const avgTokens = Math.round(traces.reduce((acc, t) => acc + t.tokens, 0) / totalTracesCount);
+        const avgEvalScore = Math.round(traces.reduce((acc, t) => acc + t.evalScore, 0) / totalTracesCount);
+        const totalCost = traces.reduce((acc, t) => acc + t.cost, 0);
+
+        const statsHtml = `
+          <div class="rounded-xl border border-slate-200 bg-white text-slate-950 shadow-sm transition-all hover:border-slate-300">
+            <div class="flex flex-row items-center justify-between space-y-0 pb-2 p-6">
+              <p class="text-[10px] font-bold uppercase tracking-wider text-slate-500 font-mono">Total Run Traces</p>
+              <div class="p-1.5 rounded-md border text-blue-600 bg-blue-50 border-blue-100">
+                <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><rect x="16" y="16" width="6" height="6" rx="1"/><rect x="2" y="16" width="6" height="6" rx="1"/><rect x="9" y="2" width="6" height="6" rx="1"/><path d="M12 8v8"/><path d="M12 16H6"/><path d="M18 16h-6"/></svg>
+              </div>
+            </div>
+            <div class="p-6 pt-0">
+              <div class="text-2xl font-bold tracking-tight text-slate-900 mt-1">${totalTracesCount}</div>
+              <p class="text-[10px] text-slate-400 mt-1 font-semibold">✔ Connected logs</p>
+            </div>
+          </div>
+
+          <div class="rounded-xl border border-slate-200 bg-white text-slate-950 shadow-sm transition-all hover:border-slate-300">
+            <div class="flex flex-row items-center justify-between space-y-0 pb-2 p-6">
+              <p class="text-[10px] font-bold uppercase tracking-wider text-slate-500 font-mono">Average Latency</p>
+              <div class="p-1.5 rounded-md border text-blue-600 bg-blue-50 border-blue-100">
+                <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              </div>
+            </div>
+            <div class="p-6 pt-0">
+              <div class="text-2xl font-bold tracking-tight text-slate-900 mt-1">${avgLatency} ms</div>
+              <p class="text-[10px] text-slate-400 mt-1 font-semibold">Calculated execution sum</p>
+            </div>
+          </div>
+
+          <div class="rounded-xl border border-slate-200 bg-white text-slate-950 shadow-sm transition-all hover:border-slate-300">
+            <div class="flex flex-row items-center justify-between space-y-0 pb-2 p-6">
+              <p class="text-[10px] font-bold uppercase tracking-wider text-slate-500 font-mono">Average Token Volume</p>
+              <div class="p-1.5 rounded-md border text-blue-600 bg-blue-50 border-blue-100">
+                <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><circle cx="8" cy="8" r="6"/><circle cx="18" cy="18" r="4"/><path d="M12 18a6 6 0 0 0-6-6"/></svg>
+              </div>
+            </div>
+            <div class="p-6 pt-0">
+              <div class="text-2xl font-bold tracking-tight text-slate-900 mt-1">${avgTokens}</div>
+              <p class="text-[10px] text-slate-400 mt-1 font-semibold">Context + Completion</p>
+            </div>
+          </div>
+
+          <div class="rounded-xl border border-slate-200 bg-white text-slate-950 shadow-sm transition-all hover:border-slate-300">
+            <div class="flex flex-row items-center justify-between space-y-0 pb-2 p-6">
+              <p class="text-[10px] font-bold uppercase tracking-wider text-slate-500 font-mono">Avg Alignment Evaluation</p>
+              <div class="p-1.5 rounded-md border text-blue-600 bg-blue-50 border-blue-100">
+                <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+              </div>
+            </div>
+            <div class="p-6 pt-0">
+              <div class="text-2xl font-bold tracking-tight text-slate-900 mt-1">${avgEvalScore}%</div>
+              <p class="text-[10px] text-slate-400 mt-1 font-semibold">LLM-as-a-judge score</p>
+            </div>
+          </div>
+
+          <div class="rounded-xl border border-slate-200 bg-white text-slate-950 shadow-sm transition-all hover:border-slate-300">
+            <div class="flex flex-row items-center justify-between space-y-0 pb-2 p-6">
+              <p class="text-[10px] font-bold uppercase tracking-wider text-slate-500 font-mono">Projected Cost Tiers</p>
+              <div class="p-1.5 rounded-md border text-emerald-600 bg-emerald-50 border-emerald-100">
+                <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+              </div>
+            </div>
+            <div class="p-6 pt-0">
+              <div class="text-2xl font-bold tracking-tight text-slate-900 mt-1">$${totalCost.toFixed(4)}</div>
+              <p class="text-[10px] text-slate-400 mt-1 font-semibold">OpenAI context weight</p>
+            </div>
+          </div>
+        `;
+        document.getElementById('stats-grid').innerHTML = statsHtml;
+
+        let tracesHtml = '';
+        traces.forEach(trace => {
+          const isSelected = state.selectedTraceId === trace.id;
+          const statusBg = trace.status === "error" ? "bg-red-500" : "bg-emerald-500";
+          const scoreClass = trace.evalScore > 80 ? "text-emerald-600" : "text-amber-600";
+          const containerClass = isSelected 
+            ? "group p-3.5 rounded-lg border transition-all cursor-pointer flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-slate-50 border-blue-300 shadow-sm" 
+            : "group p-3.5 rounded-lg border transition-all cursor-pointer flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50/50";
+
+          // Format attributes for sub-line list preview
+          let attrsText = '';
+          if (trace.attributes) {
+            attrsText = Object.keys(trace.attributes)
+              .map(k => `${k}: <span class="font-bold text-slate-600">${trace.attributes[k]}</span>`)
+              .join(' | ');
+          }
+
+          tracesHtml += `
+            <div onclick="selectTrace('${trace.id}')" class="${containerClass}">
+              <div class="space-y-1">
+                <div class="flex items-center gap-2">
+                  <span class="w-1.5 h-1.5 rounded-full ${statusBg}"></span>
+                  <span class="font-bold text-xs text-slate-800 group-hover:text-blue-700 transition-colors">${trace.name}</span>
+                  <span class="text-[9px] text-slate-500 font-mono bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">${trace.id}</span>
+                </div>
+                <p class="text-[11px] text-slate-400 font-mono line-clamp-1 italic">"${trace.query}"</p>
+                <div class="text-[9px] text-slate-400 font-mono uppercase tracking-wider bg-slate-150 p-1 rounded inline-block">
+                  ${attrsText || 'no metrics'}
+                </div>
+              </div>
+
+              <div class="flex items-center gap-4 self-stretch sm:self-auto justify-between border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-100">
+                <div class="text-right">
+                  <p class="text-[9px] text-slate-400 uppercase font-bold font-mono">Latency</p>
+                  <p class="text-xs font-bold font-mono text-slate-700">${trace.latency} ms</p>
+                </div>
+                <div class="text-right">
+                  <p class="text-[9px] text-slate-400 uppercase font-bold font-mono">Score</p>
+                  <p class="text-xs font-bold font-mono ${scoreClass}">${trace.evalScore}%</p>
+                </div>
+                <div class="text-right">
+                  <p class="text-[9px] text-slate-400 uppercase font-bold font-mono">Spans</p>
+                  <p class="text-xs font-bold font-mono text-slate-700">${trace.spans.length}</p>
+                </div>
+                <svg class="text-slate-400 group-hover:text-slate-900 transition-colors h-4 w-4 pl-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+              </div>
+            </div>
+          `;
+        });
+        document.getElementById('dashboard-traces-container').innerHTML = tracesHtml;
+      }
+
+      // 4. EXPLORER TAB INJECTION
+      if (state.activeTab === 'explorer') {
+        const trace = traces.find(t => t.id === state.selectedTraceId) || traces[0];
+        const selectedSpan = trace.spans.find(s => s.id === state.selectedSpanId) || trace.spans[0];
+
+        // Header Panel
+        const headerHtml = `
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full ${trace.status === "error" ? 'bg-red-500 animate-pulse' : 'bg-emerald-500'}"></span>
+              <h3 class="text-sm font-bold text-slate-900">${trace.name}</h3>
+              <span class="inline-flex items-center rounded-md border border-slate-200 bg-white px-2 py-0.5 text-[9px] font-mono text-slate-600">${trace.id}</span>
+            </div>
+            <p class="text-[11px] text-slate-500 mt-1 italic font-mono">"${trace.query}"</p>
+          </div>
+
+          <div class="flex gap-4 items-center bg-slate-50 border border-slate-200 px-4 py-2 rounded-lg">
+            <div class="text-center">
+              <p class="text-[9px] uppercase text-slate-400 font-bold font-mono">Latency</p>
+              <p class="text-xs font-bold font-mono text-blue-600">${trace.latency}ms</p>
+            </div>
+            <div class="h-6 w-px bg-slate-200"></div>
+            <div class="text-center">
+              <p class="text-[9px] uppercase text-slate-400 font-bold font-mono">Tokens</p>
+              <p class="text-xs font-bold font-mono text-slate-700">${trace.tokens}</p>
+            </div>
+            <div class="h-6 w-px bg-slate-200"></div>
+            <div class="text-center">
+              <p class="text-[9px] uppercase text-slate-400 font-bold font-mono">Alignment</p>
+              <p class="text-xs font-bold font-mono text-emerald-600">${trace.evalScore}%</p>
+            </div>
+          </div>
+        `;
+        document.getElementById('explorer-header-panel').innerHTML = headerHtml;
+
+        // Tree List
+        let treeHtml = '';
+        trace.spans.forEach((span, index) => {
+          const isSelected = state.selectedSpanId === span.id;
+          const selectedClass = isSelected 
+            ? "bg-slate-50 border-blue-400 shadow-sm" 
+            : "bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50/30";
+
+          let typeBadgeClass = "";
+          if (span.type === "planner") typeBadgeClass = "border-amber-200 bg-amber-50 text-amber-700";
+          else if (span.type === "retriever") typeBadgeClass = "border-slate-200 bg-slate-100 text-slate-800";
+          else if (span.type === "tool") typeBadgeClass = "border-slate-200 bg-white text-slate-600";
+          else if (span.type === "llm") typeBadgeClass = "border-transparent bg-blue-600 text-white";
+          else typeBadgeClass = "border-emerald-200 bg-emerald-50 text-emerald-700";
+
+          treeHtml += `
+            <div onclick="selectSpan('${span.id}')" class="p-3 rounded-lg border cursor-pointer transition flex flex-col md:flex-row justify-between items-start md:items-center gap-3 ${selectedClass}" style="margin-left: ${index * 12}px">
+              <div class="flex items-center gap-3">
+                <span class="text-[9px] font-mono text-slate-500 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded">
+                  ${index + 1}
+                </span>
+                <div>
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <h4 class="text-xs font-semibold text-slate-800">${span.name}</h4>
+                    <span class="inline-flex items-center rounded-md border px-2 py-0.5 text-[11px] font-semibold tracking-wide uppercase font-mono ${typeBadgeClass}">${span.type}</span>
+                  </div>
+                  <p class="text-[10px] text-slate-400 font-mono mt-0.5">${span.model || "Local process"}</p>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-4 self-stretch md:self-auto justify-between pt-2 md:pt-0 border-t md:border-0 border-slate-100">
+                <div class="flex items-center gap-1 text-[11px] font-mono text-slate-600">
+                  <span class="w-1 h-1 rounded-full ${span.status === "error" ? "bg-red-500" : "bg-emerald-500"}"></span>
+                  <span>${span.duration} ms</span>
+                </div>
+                <span class="text-[10px] text-slate-400 font-mono">${span.tokens > 0 ? `${span.tokens} tokens` : '0 tokens'}</span>
+              </div>
+            </div>
+          `;
+        });
+        document.getElementById('explorer-hierarchy-container').innerHTML = treeHtml;
+
+        // Waterfall Graphs
+        let waterfallHtml = `
+          <div class="flex text-slate-400 border-b border-slate-100 pb-2">
+            <div class="w-1/3 text-[9px] uppercase tracking-wider font-semibold font-mono">Span Process</div>
+            <div class="w-2/3 flex justify-between text-[9px] tracking-wider relative font-semibold font-mono">
+              <span>0ms</span>
+              <span>${Math.round(trace.latency / 2)}ms</span>
+              <span>${trace.latency}ms</span>
+            </div>
+          </div>
+        `;
+
+        trace.spans.forEach(span => {
+          const startPercent = (span.startOffset / trace.latency) * 100;
+          const durationPercent = (span.duration / trace.latency) * 100;
+          let colorClass = "bg-emerald-500";
+          if (span.type === "planner") colorClass = "bg-amber-500";
+          else if (span.type === "retriever") colorClass = "bg-slate-400";
+          else if (span.type === "tool") colorClass = "bg-blue-400";
+          else if (span.type === "llm") colorClass = "bg-blue-600";
+
+          waterfallHtml += `
+            <div class="flex items-center">
+              <div class="w-1/3 text-slate-700 truncate pr-2 font-semibold text-[10px]">
+                ${span.name}
+              </div>
+              <div class="w-2/3 relative h-5 bg-slate-100 rounded overflow-hidden flex items-center border border-slate-200">
+                <div style="margin-left: ${startPercent}%; width: ${Math.max(durationPercent, 1.5)}%" class="h-full opacity-90 transition-all duration-300 flex items-center justify-end px-1.5 font-bold text-[9px] text-white ${colorClass}">
+                  <span class="text-[9px] font-semibold">${span.duration}ms</span>
+                </div>
+              </div>
+            </div>
+          `;
+        });
+        document.getElementById('explorer-waterfall-container').innerHTML = waterfallHtml;
+
+        // Detail Inspector Panel
+        let attrsHtml = '';
+        if (trace.attributes) {
+          attrsHtml = Object.keys(trace.attributes).map(k => `
+            <div class="bg-slate-50 p-2 rounded border border-slate-200 font-mono text-[10px]">
+              <span class="text-slate-400 font-semibold block uppercase font-sans">${k}</span>
+              <span class="text-slate-800 font-bold">${trace.attributes[k]}</span>
+            </div>
+          `).join('');
+        }
+
+        const detailHtml = `
+          <div class="flex flex-col space-y-1.5 p-6 border-b border-slate-100">
+            <p class="text-[10px] uppercase font-bold tracking-wider text-blue-600 font-mono">Span Telemetry Inspector</p>
+            <h3 class="text-base font-semibold leading-none tracking-tight text-slate-900">${selectedSpan.name}</h3>
+            <p class="font-mono text-[10px] text-slate-500">Reference ID: ${selectedSpan.id}</p>
+          </div>
+
+          <div class="p-6 pt-4 space-y-4">
+            <div class="bg-blue-50/40 border border-blue-100 rounded-lg p-3.5">
+              <h4 class="text-[10px] uppercase font-bold text-blue-900 flex items-center gap-1 font-mono">
+                <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                Observability Context
+              </h4>
+              <p class="text-xs text-slate-600 mt-1 leading-relaxed">
+                ${selectedSpan.conceptExplain}
+              </p>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+                <p class="text-[9px] uppercase tracking-wider text-slate-400 font-bold font-mono">Duration</p>
+                <p class="text-xs font-bold text-slate-800 mt-0.5 font-mono">${selectedSpan.duration} ms</p>
+              </div>
+              <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+                <p class="text-[9px] uppercase tracking-wider text-slate-400 font-bold font-mono">Token Volume</p>
+                <p class="text-xs font-bold text-slate-800 mt-0.5 font-mono">${selectedSpan.tokens}</p>
+              </div>
+              <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+                <p class="text-[9px] uppercase tracking-wider text-slate-400 font-bold font-mono">Model Provider</p>
+                <p class="text-xs font-bold text-slate-600 mt-0.5 truncate font-mono">${selectedSpan.model || "none"}</p>
+              </div>
+              <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+                <p class="text-[9px] uppercase tracking-wider text-slate-400 font-bold font-mono">Status Code</p>
+                <div class="mt-0.5">
+                  <span class="inline-flex items-center rounded-md border px-2 py-0.5 text-[11px] font-semibold tracking-wide font-mono uppercase ${selectedSpan.status === 'error' ? 'border-red-200 bg-red-50 text-red-700' : 'border-emerald-200 bg-emerald-50 text-emerald-700'}">${selectedSpan.status}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="space-y-1.5 pt-1">
+              <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider font-mono">Evaluation Attributes</span>
+              <div class="grid grid-cols-2 gap-2">
+                ${attrsHtml || '<span class="text-xs text-slate-400 italic font-mono">No attributes defined</span>'}
+              </div>
+            </div>
+
+            <div class="space-y-3 pt-2">
+              <div>
+                <span class="text-[10px] uppercase font-bold text-slate-400 font-mono">Input Payload (JSON)</span>
+                <pre class="bg-slate-900 p-3 rounded-lg text-[10px] text-blue-200 font-mono mt-1 border border-slate-800 overflow-x-auto max-h-[120px] whitespace-pre-wrap">${JSON.stringify(selectedSpan.input, null, 2)}</pre>
+              </div>
+
+              <div>
+                <span class="text-[10px] uppercase font-bold text-slate-400 font-mono">Output Payload (JSON)</span>
+                <pre class="bg-slate-900 p-3 rounded-lg text-[10px] text-emerald-200 font-mono mt-1 border border-slate-800 overflow-x-auto max-h-[180px] whitespace-pre-wrap">${JSON.stringify(selectedSpan.output, null, 2)}</pre>
+              </div>
+            </div>
+          </div>
+        `;
+        document.getElementById('explorer-detail-panel').innerHTML = detailHtml;
+      }
+
+      // 5. TOKENS TAB INJECTION
+      if (state.activeTab === 'tokens') {
+        let tokensHtml = '';
+        traces.forEach(trace => {
+          const promptEst = Math.round(trace.tokens * 0.72);
+          const compEst = trace.tokens - promptEst;
+          const promptPct = (promptEst / trace.tokens) * 100;
+          const compPct = (compEst / trace.tokens) * 100;
+
+          tokensHtml += `
+            <div class="bg-slate-50 p-4 rounded-lg border border-slate-200 space-y-2">
+              <div class="flex justify-between items-center text-xs">
+                <span class="font-semibold text-slate-800">${trace.name}</span>
+                <span class="font-mono font-bold text-slate-600">$${trace.cost.toFixed(4)}</span>
+              </div>
+
+              <div class="h-3 bg-slate-200 rounded-full overflow-hidden flex">
+                <div style="width: ${promptPct}%" class="bg-blue-400 h-full"></div>
+                <div style="width: ${compPct}%" class="bg-blue-600 h-full"></div>
+              </div>
+
+              <div class="flex justify-between text-[9px] font-mono text-slate-500 pt-1">
+                <span class="flex items-center gap-1 font-semibold">
+                  <span class="w-1.5 h-1.5 bg-blue-400 rounded-full"></span> 
+                  Prompt Context (${promptEst} tokens)
+                </span>
+                <span class="flex items-center gap-1 font-semibold">
+                  <span class="w-1.5 h-1.5 bg-blue-600 rounded-full"></span> 
+                  Completion Output (${compEst} tokens)
+                </span>
+              </div>
+            </div>
+          `;
+        });
+        document.getElementById('tokens-proportions-container').innerHTML = tokensHtml;
+      }
+
+      // 6. RESPONSE OPTIMIZATION SUITE TAB INJECTION (RE-ENGINEERED LAB)
+      if (state.activeTab === 'prompts') {
+        const activeKey = state.selectedScenario;
+        const caseInfo = testCases[activeKey];
+        const activeVariant = caseInfo[state.promptSelected];
+
+        // Render scenario buttons
+        let scenarioBtnsHtml = '';
+        Object.keys(testCases).forEach(key => {
+          const isSel = key === activeKey;
+          const btnClass = isSel 
+            ? "p-2.5 rounded text-xs font-bold bg-indigo-50 border border-indigo-300 text-indigo-700 text-left shadow-sm transition-all"
+            : "p-2.5 rounded text-xs font-medium text-slate-600 border border-slate-200 bg-white text-left hover:border-slate-350 hover:bg-slate-50 transition-all";
+          
+          scenarioBtnsHtml += `
+            <button onclick="updateScenario('${key}')" class="${btnClass}">
+              ${testCases[key].title}
+            </button>
+          `;
+        });
+        document.getElementById('scenario-selector-container').innerHTML = scenarioBtnsHtml;
+
+        // Render Variant Playground Switcher tabs
+        const variantsList = [
+          { id: 'agentA', label: 'Prompt A (Baseline)' },
+          { id: 'agentB', label: 'Prompt B (Concise)' },
+          { id: 'agentC', label: 'Prompt C (Quantitative)' }
+        ];
+
+        let variantsHtml = '';
+        variantsList.forEach(v => {
+          const active = state.promptSelected === v.id;
+          variantsHtml += `
+            <button onclick="selectPromptVariant('${v.id}')" class="px-2.5 py-1 text-xs font-semibold rounded-md transition-all ${
+              active ? "bg-white text-indigo-600 shadow-sm border border-slate-200" : "text-slate-500 hover:text-slate-800"
+            }">
+              ${v.label}
+            </button>
+          `;
+        });
+        document.getElementById('prompt-variant-tab-container').innerHTML = variantsHtml;
+
+        // Populate selected variant values in table indicators
+        document.getElementById('v-metric-accuracy').innerText = `${activeVariant.accuracy} / 1.0`;
+        document.getElementById('v-metric-ptokens').innerText = `${activeVariant.promptTokens} tk`;
+        document.getElementById('v-metric-ctokens').innerText = `${activeVariant.completionTokens} tk`;
+        document.getElementById('v-metric-cost').innerText = `$${activeVariant.cost.toFixed(4)}`;
+
+        document.getElementById('v-metric-prompt-text').innerText = activeVariant.prompt;
+        document.getElementById('v-metric-response-text').innerText = activeVariant.response;
+
+        // Dynamic cost calculations based on slider scale
+        const multiplier = state.scaleRequestsDay;
+        document.getElementById('slider-volume-lbl').innerText = `${multiplier.toLocaleString()} / day`;
+
+        // Calculate token elimination compared to Agent A (Baseline)
+        const runTokensSaved = (caseInfo.agentA.promptTokens + caseInfo.agentA.completionTokens) - (activeVariant.promptTokens + activeVariant.completionTokens);
+        const dailyTokensSaved = Math.max(0, multiplier * runTokensSaved);
+        const dailyCostSaved = (dailyTokensSaved / 1000000) * 15.00; // Completion weight standard index
+        const monthlyCostSaved = dailyCostSaved * 30;
+
+        document.getElementById('scale-tokens-saved').innerText = `${Math.round(dailyTokensSaved).toLocaleString()}`;
+        document.getElementById('scale-cost-saved').innerText = `$${Math.round(monthlyCostSaved).toLocaleString()} / mo`;
+
+        // Populate auditor alerts
+        let alertsHtml = '';
+        activeVariant.alerts.forEach(al => {
+          const isWarning = al.startsWith("⚠️");
+          const alertClass = isWarning 
+            ? "bg-amber-50 border border-amber-200 text-amber-800 p-2.5 rounded text-[11px] leading-relaxed"
+            : "bg-emerald-50 border border-emerald-200 text-emerald-800 p-2.5 rounded text-[11px] leading-relaxed";
+          alertsHtml += `<div class="${alertClass}">${al}</div>`;
+        });
+        document.getElementById('scenario-alerts-box').innerHTML = alertsHtml;
+      }
+
+      // 6.5 REDUNDANCY ANALYZER ACTIVE RENDER (NEW)
+      if (state.activeTab === 'analyzer') {
+        const key = state.selectedRedundancyKey;
+        const info = redundancyDataset[key];
+
+        // Highlight source button list
+        let srcBtnsHtml = '';
+        Object.keys(redundancyDataset).forEach(k => {
+          const isSel = k === key;
+          const btnClass = isSel 
+            ? "p-2.5 rounded text-xs font-bold bg-rose-50 border border-rose-300 text-rose-700 text-left shadow-sm transition-all"
+            : "p-2.5 rounded text-xs font-medium text-slate-600 border border-slate-200 bg-white text-left hover:border-slate-350 hover:bg-slate-50 transition-all";
+          srcBtnsHtml += `
+            <button onclick="selectRedundancyKey('${k}')" class="${btnClass}">
+              ${redundancyDataset[k].title}
+            </button>
+          `;
+        });
+        document.getElementById('redundancy-selector-container').innerHTML = srcBtnsHtml;
+
+        // Assign top cards
+        document.getElementById('redundancy-stat-waste').innerText = `${info.wasteTokens} tokens`;
+        document.getElementById('redundancy-stat-saving').innerText = `${info.wastePercent}% compression`;
+
+        // Macro calculation (Assuming 100k requests/day, saving wastetokens)
+        const dailyWastedTokens = 100000 * info.wasteTokens;
+        const monthlyWastedCost = (dailyWastedTokens / 1000000) * 15.00 * 30; // $15 / million tokens rate
+        document.getElementById('redundancy-calc-macro').innerText = `$${Math.round(monthlyWastedCost).toLocaleString()} USD`;
+
+        // Loop anomaly directory render
+        let repeatsHtml = '';
+        info.conceptRepeats.forEach(rep => {
+          repeatsHtml += `
+            <div class="p-2 border border-rose-100 rounded bg-rose-50/50 flex justify-between items-start gap-2">
+              <span class="font-sans text-[11px] text-slate-700 font-semibold italic">"${rep.text}"</span>
+              <span class="text-[9px] font-mono bg-rose-100 text-rose-700 px-1 py-0.5 rounded uppercase font-bold tracking-wider whitespace-nowrap">${rep.type}</span>
+            </div>
+          `;
+        });
+        document.getElementById('redundancy-repeats-directory').innerHTML = repeatsHtml;
+
+        // Core text highlighter panel render with interactive Compactor animation state
+        const viewer = document.getElementById('redundancy-viewer-panel');
+        const compactBtn = document.getElementById('redundancy-compact-btn');
+
+        if (state.isCompacting) {
+          compactBtn.disabled = true;
+          compactBtn.innerText = "SEMANTIC REVISION...";
+          viewer.innerHTML = `
+            <div class="flex flex-col items-center justify-center py-16 text-indigo-600 animate-pulse font-mono">
+              <svg class="h-6 w-6 animate-spin mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 2v4M12 18v4"/></svg>
+              <span>Executing compression heuristics...</span>
+            </div>
+          `;
+        } else if (state.isCompacted) {
+          compactBtn.disabled = false;
+          compactBtn.innerText = "Reset View Canvas";
+          compactBtn.onclick = () => {
+            state.isCompacted = false;
+            render();
+          };
+          
+          viewer.className = "p-5 rounded-lg border border-emerald-200 bg-emerald-50 text-xs text-slate-700 leading-relaxed font-sans font-medium select-all transition-all duration-300 border-l-4 border-l-emerald-600";
+          viewer.innerHTML = `
+            <p class="font-bold text-emerald-800 block mb-1">✔ Sleek Semantic Revision Complete:</p>
+            "${info.optimized}"
+            <div class="mt-3 pt-3 border-t border-emerald-100 flex justify-between items-center text-[10px] font-mono text-emerald-700">
+              <span>Savings: -${info.wasteTokens} useless tokens</span>
+              <span>Footprint compact quotient: -${info.wastePercent}%</span>
+            </div>
+          `;
+        } else {
+          // Default uncompacted text, loop variables highlighted in pink/rose
+          compactBtn.disabled = false;
+          compactBtn.innerText = "Trigger Semantic Compression";
+          compactBtn.onclick = triggerCompactAnimation;
+          viewer.className = "p-5 rounded-lg border border-slate-200 bg-slate-50 text-xs text-slate-700 leading-relaxed font-sans font-medium select-all transition-all duration-300 border-l-4 border-l-rose-500";
+
+          // Dynamically highlight concepts in original text
+          let rawHTML = info.original;
+          info.conceptRepeats.forEach(rep => {
+            if (rep.type.startsWith("Duplicate")) {
+              rawHTML = rawHTML.replace(rep.text, `<span class="bg-rose-100 text-rose-800 font-bold border-b border-b-rose-300 cursor-help" title="${rep.type}">${rep.text}</span>`);
+            }
+          });
+          viewer.innerHTML = rawHTML;
+        }
+      }
+
+      // 7. SIMULATOR VIEW INJECTION
+      if (state.activeTab === 'simulator') {
+        const terminal = document.getElementById('sim-log-terminal');
+        const progressBlock = document.getElementById('sim-progress-block');
+        const progressBar = document.getElementById('sim-progress-bar');
+        const progressLbl = document.getElementById('sim-progress-lbl');
+        const simBtn = document.getElementById('btn-run-simulation');
+
+        // Render dynamic attributes injection inputs
+        let inputsHtml = '';
+        customAttributes.forEach(attr => {
+          if (attr.type === 'Boolean') {
+            inputsHtml += `
+              <div class="flex items-center justify-between text-xs font-sans">
+                <span class="font-mono text-slate-700">${attr.name}</span>
+                <select onchange="updateSimAttr('${attr.name}', this.value)" class="bg-white border border-slate-200 p-1 rounded font-mono text-[11px] focus:outline-none">
+                  <option value="false">false (Default)</option>
+                  <option value="true">true</option>
+                </select>
+              </div>
+            `;
+          } else {
+            inputsHtml += `
+              <div class="flex items-center justify-between text-xs font-sans">
+                <span class="font-mono text-slate-700">${attr.name}</span>
+                <select onchange="updateSimAttr('${attr.name}', this.value)" class="bg-white border border-slate-200 p-1 rounded font-mono text-[11px] focus:outline-none">
+                  ${attr.values.map(val => `<option value="${val}">${val}</option>`).join('')}
+                </select>
+              </div>
+            `;
+          }
+        });
+        document.getElementById('simulator-attributes-inject-list').innerHTML = inputsHtml;
+
+        if (state.simLog.length === 0) {
+          terminal.innerHTML = `
+            <div class="text-center text-slate-400 py-16 flex flex-col items-center gap-2">
+              <svg class="h-5 w-5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+              <span class="font-semibold text-slate-400">Console empty. Launch a custom simulation above to view outputs.</span>
+            </div>
+          `;
+          progressBlock.classList.add('hidden');
+        } else {
+          let logHtml = '';
+          state.simLog.forEach(log => {
+            logHtml += `
+              <div class="flex gap-2 items-start">
+                <span class="text-blue-500 font-bold">❖</span>
+                <span>${log}</span>
+              </div>
+            `;
+          });
+          if (state.isSimulating) {
+            logHtml += `
+              <div class="flex gap-2 items-center text-blue-600 font-bold animate-pulse">
+                <span>⚙ Synthesizing telemetry sequence logs...</span>
+              </div>
+            `;
+            progressBlock.classList.remove('hidden');
+            progressBar.style.width = `${state.simProgress}%`;
+            progressLbl.innerText = `${Math.round(state.simProgress)}%`;
+            simBtn.disabled = true;
+          } else {
+            progressBlock.classList.add('hidden');
+            simBtn.disabled = false;
+          }
+          terminal.innerHTML = logHtml;
+        }
+      }
+    }
+
+    // Initial page load trigger
+    window.onload = function() {
+      render();
+    }
+  </script>
+</body>
+</html>

@@ -8,10 +8,10 @@
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   
-  <!-- Inter & Fira Code Fonts -->
+  <!-- Fonts: Space Grotesk (display) + Inter (body) + Fira Code (mono) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
 
   <script>
     tailwind.config = {
@@ -19,7 +19,12 @@
         extend: {
           fontFamily: {
             sans: ['Inter', 'sans-serif'],
-            mono: ['Fira Code', 'monospace'],
+            display: ['"Space Grotesk"', 'Inter', 'sans-serif'],
+            mono: ['"Fira Code"', 'monospace'],
+          },
+          colors: {
+            grape: '#7c3aed', berry: '#db2777', sun: '#f59e0b',
+            flame: '#f97316', mint: '#10b981', sky2: '#0ea5e9',
           }
         }
       }
@@ -27,24 +32,117 @@
   </script>
 
   <style>
-    /* Custom scrollbar matching slate theme */
-    ::-webkit-scrollbar {
-      width: 6px;
-      height: 6px;
+    :root {
+      --grape: #7c3aed;   /* primary brand */
+      --grape-600: #6d28d9;
+      --berry: #db2777;   /* secondary pop */
+      --sky: #2563eb;
+      --mint: #10b981;
+      --sun: #f59e0b;
+      --flame: #f97316;
+      --ink: #1e1b2e;     /* deep plum-ink for text */
+      --shadow-color: 124 58 237;  /* grape rgb for tinted shadows */
     }
-    ::-webkit-scrollbar-track {
-      background: #f8fafc;
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      color: var(--ink);
+      background-color: #fbfaff;
+      position: relative;
     }
-    ::-webkit-scrollbar-thumb {
-      background: #cbd5e1;
-      border-radius: 4px;
+    /* Playful colour-mesh backdrop — fixed, drifts slowly, sits behind everything */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: -20%;
+      z-index: -1;
+      background:
+        radial-gradient(38vw 38vw at 12% 8%,  rgba(124,58,237,0.18), transparent 60%),
+        radial-gradient(34vw 34vw at 88% 12%, rgba(219,39,119,0.15), transparent 60%),
+        radial-gradient(40vw 40vw at 78% 88%, rgba(14,165,233,0.16), transparent 60%),
+        radial-gradient(34vw 34vw at 18% 92%, rgba(245,158,11,0.14), transparent 62%);
+      filter: saturate(1.1);
+      animation: meshDrift 26s ease-in-out infinite alternate;
     }
-    ::-webkit-scrollbar-thumb:hover {
-      background: #94a3b8;
+    @keyframes meshDrift {
+      0%   { transform: translate3d(0,0,0) scale(1); }
+      100% { transform: translate3d(2%, -2%, 0) scale(1.08); }
+    }
+
+    /* Display font for headings */
+    h1, h2, h3, .font-display { font-family: 'Space Grotesk', 'Inter', sans-serif; letter-spacing: -0.02em; }
+
+    /* ---- Cards: rounder, softer, lifting (compound selectors beat single Tailwind utilities) ---- */
+    main .rounded-xl, main .rounded-2xl {
+      border-radius: 1.25rem;
+      box-shadow: 0 1px 2px rgba(30,27,46,0.04), 0 12px 30px -18px rgba(var(--shadow-color),0.28);
+      transition: transform .25s cubic-bezier(.22,1,.36,1), box-shadow .25s cubic-bezier(.22,1,.36,1);
+    }
+    main .rounded-xl.bg-white, main .rounded-2xl.bg-white { background: rgba(255,255,255,0.82); backdrop-filter: blur(6px); }
+
+    /* ---- Header chrome ---- */
+    header {
+      background: rgba(255,255,255,0.78) !important;
+      backdrop-filter: saturate(1.4) blur(12px);
+      border-bottom: 1px solid rgba(124,58,237,0.12) !important;
+      box-shadow: 0 6px 24px -16px rgba(var(--shadow-color),0.5);
+    }
+
+    /* ---- Nav: segmented control with a vivid active pill ---- */
+    nav.inline-flex { background: rgba(124,58,237,0.07) !important; border: 1px solid rgba(124,58,237,0.10); }
+    nav.inline-flex > button { color: #4c4565; border-radius: 0.6rem; }
+    nav.inline-flex > button:hover { background: rgba(124,58,237,0.10) !important; color: var(--grape-600) !important; }
+    nav.inline-flex > button.nav-active {
+      background: linear-gradient(135deg, var(--grape), var(--berry)) !important;
+      color: #fff !important;
+      box-shadow: 0 6px 16px -6px rgba(var(--shadow-color),0.6);
+      border: 0 !important;
+    }
+    nav.inline-flex > button.nav-active svg { color: #fff !important; }
+
+    /* ---- Primary action buttons: gradient + glow ---- */
+    .btn-fun {
+      background: linear-gradient(135deg, var(--grape), var(--berry)) !important;
+      color: #fff !important; border: 0 !important;
+      box-shadow: 0 10px 24px -10px rgba(var(--shadow-color),0.7);
+      transition: transform .2s cubic-bezier(.22,1,.36,1), box-shadow .2s, filter .2s;
+    }
+    .btn-fun:hover { transform: translateY(-1px); filter: brightness(1.06); box-shadow: 0 14px 30px -10px rgba(var(--shadow-color),0.8); }
+    .btn-fun:active { transform: translateY(0); }
+
+    /* ---- Inputs ---- */
+    main textarea, main input[type="text"], main input[type="password"] { border-radius: 0.85rem; }
+    main textarea:focus, main input:focus { border-color: var(--grape) !important; box-shadow: 0 0 0 4px rgba(124,58,237,0.14) !important; }
+
+    /* ---- Graph / DAG run states ---- */
+    .dag-node { transition: all .3s cubic-bezier(.22,1,.36,1); }
+    .dag-node.is-active { animation: nodeGlow 1.1s ease-in-out infinite; }
+    @keyframes nodeGlow {
+      0%,100% { box-shadow: 0 0 0 0 rgba(124,58,237,0.0); }
+      50%     { box-shadow: 0 0 0 6px rgba(124,58,237,0.18); }
+    }
+
+    .card-lift:hover { transform: translateY(-3px); box-shadow: 0 18px 40px -18px rgba(var(--shadow-color),0.5) !important; }
+
+    /* Selectable graph card accent rail via data-accent */
+    .graph-card { transition: transform .2s cubic-bezier(.22,1,.36,1), box-shadow .2s, border-color .2s; }
+    .graph-card:hover { transform: translateY(-2px); }
+
+    /* ---- Scrollbar ---- */
+    ::-webkit-scrollbar { width: 9px; height: 9px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: linear-gradient(var(--grape), var(--berry)); border-radius: 10px; border: 2px solid transparent; background-clip: padding-box; }
+
+    ::selection { background: rgba(124,58,237,0.18); color: var(--grape-600); }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation: none !important; scroll-behavior: auto !important; transition-duration: .01ms !important; }
     }
   </style>
 </head>
-<body class="min-h-screen bg-slate-50 text-slate-900 flex flex-col selection:bg-blue-100 selection:text-blue-900">
+<body class="min-h-screen flex flex-col">
 
   <script>
     // Global simulated observability dataset with attributes
@@ -507,7 +605,7 @@
     };
 
     const state = {
-      activeTab: 'instrumentation', // Default starting tab
+      activeTab: 'playground', // Default starting tab (the homepage)
       selectedTraceId: 'tr-04a2',
       selectedSpanId: 'sp-2',
       selectedInstrFunction: 'run_pipeline', 
@@ -556,6 +654,9 @@
       const trace = traces.find(t => t.id === id);
       if (trace && trace.spans.length > 0) {
         state.selectedSpanId = trace.spans[0].id;
+      } else if (trace && trace.fromLangSmith && trace.spans.length === 0) {
+        // Summary pulled from LangSmith — fetch its full span tree on demand.
+        hydrateTraceFromLangSmith(id);
       }
       render();
     }
@@ -653,120 +754,199 @@
   </script>
 
   <script>
-    // Live execution simulation for the Graph Playground
-    function executeGraphPlayground() {
+    // ---- Backend wiring -----------------------------------------------------
+    // Everything below talks to the local Node server (server.js), which makes
+    // real OpenAI calls and traces them with LangSmith. No more mock data.
+    const backend = { ok: false, openai: false, langsmith: false, model: '', project: '' };
+
+    async function api(path, body) {
+      const res = await fetch(path, body ? {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+      } : {});
+      const data = await res.json().catch(() => ({ error: 'Invalid server response' }));
+      if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
+      return data;
+    }
+
+    function applyStatus() {
+      const btn = document.getElementById('connection-status');
+      const dot = document.getElementById('conn-dot');
+      const label = document.getElementById('conn-label');
+      const base = 'flex items-center gap-1.5 rounded-md border px-2 py-1 text-[10px] font-semibold transition-all hover:brightness-95 ';
+      if (!backend.ok) {
+        btn.className = base + 'border-rose-200 bg-rose-50 text-rose-700';
+        dot.className = 'h-1.5 w-1.5 rounded-full bg-rose-500';
+        label.textContent = 'Offline';
+      } else if (!backend.openai) {
+        btn.className = base + 'border-amber-200 bg-amber-50 text-amber-700';
+        dot.className = 'h-1.5 w-1.5 rounded-full bg-amber-500';
+        label.textContent = 'Add API key';
+      } else {
+        btn.className = base + 'border-emerald-200 bg-emerald-50 text-emerald-700';
+        dot.className = 'h-1.5 w-1.5 rounded-full bg-emerald-500';
+        label.textContent = backend.langsmith ? `Live · ${backend.model}` : `Live · ${backend.model} (no tracing)`;
+      }
+    }
+
+    async function loadConfig() {
+      try {
+        const cfg = await api('/api/config');
+        Object.assign(backend, { ok: true }, cfg);
+      } catch (e) {
+        backend.ok = false;
+      }
+      applyStatus();
+    }
+
+    function toggleKeyPanel() {
+      document.getElementById('key-panel').classList.toggle('hidden');
+    }
+
+    async function saveKeys() {
+      const openai = document.getElementById('input-openai-key').value;
+      const langsmith = document.getElementById('input-langsmith-key').value;
+      const msg = document.getElementById('key-panel-msg');
+      const btn = document.getElementById('save-keys-btn');
+      if (!openai.trim() && !langsmith.trim()) { msg.textContent = 'Enter at least your OpenAI key.'; return; }
+      btn.disabled = true; btn.textContent = 'Connecting…';
+      try {
+        const cfg = await api('/api/keys', { openai, langsmith });
+        Object.assign(backend, { ok: true }, cfg);
+        applyStatus();
+        document.getElementById('input-openai-key').value = '';
+        document.getElementById('input-langsmith-key').value = '';
+        msg.className = 'text-[10px] text-emerald-600 leading-relaxed';
+        msg.textContent = cfg.openai ? '✓ Connected. You can run graphs now.' : 'Saved.';
+        setTimeout(() => document.getElementById('key-panel').classList.add('hidden'), 900);
+      } catch (e) {
+        msg.className = 'text-[10px] text-rose-600 leading-relaxed';
+        msg.textContent = 'Failed: ' + e.message;
+      } finally {
+        btn.disabled = false; btn.textContent = 'Save & connect';
+      }
+    }
+
+    function buildAttributes() {
+      const attrs = {};
+      Object.keys(state.simAttributes).forEach(key => {
+        const raw = state.simAttributes[key];
+        attrs[key] = raw === 'true' ? true : raw === 'false' ? false : raw;
+      });
+      return attrs;
+    }
+
+    // Run a real agent graph in the Playground tab.
+    async function executeGraphPlayground() {
       if (state.playgroundIsRunning) return;
+      if (!backend.ok) { await loadConfig(); }
       state.playgroundIsRunning = true;
       state.playgroundProgressNodeIndex = 0;
-      state.playgroundLog = ["Initializing Graph Execution Environment...", `Active Session Context: ${state.selectedGraph}`];
+      state.playgroundLog = [`Calling ${state.selectedGraph} on the real model…`, 'Streaming spans to LangSmith…'];
       render();
 
       const workflow = graphWorkflows[state.selectedGraph];
+      // Cycle node highlights while the real request is in flight.
       let step = 0;
-
       const interval = setInterval(() => {
-        if (step < workflow.nodes.length) {
-          state.playgroundProgressNodeIndex = step;
-          state.playgroundLog.push(`[NODE SUCCESS] Transitioned through structure: '${workflow.nodes[step]}' successfully.`);
-          step++;
-          render();
-        } else {
-          clearInterval(interval);
-          state.playgroundIsRunning = false;
-          state.playgroundProgressNodeIndex = workflow.nodes.length; // highlight completed state
-          state.playgroundLog.push(`Graph finalized execution with terminal status: success.`);
-          render();
-        }
-      }, 500);
+        state.playgroundProgressNodeIndex = step % workflow.nodes.length;
+        step++;
+        render();
+      }, 350);
+
+      try {
+        const res = await api('/api/run', { graph: state.selectedGraph, input: state.playgroundInput });
+        clearInterval(interval);
+        workflow.mockResponse = res.response;
+        workflow.documents = (res.documents || []).map(d => ({
+          id: d.id, source: d.source, text: d.text, relevance: d.relevance
+        }));
+        state.playgroundLog = res.log;
+        state.playgroundProgressNodeIndex = workflow.nodes.length;
+        traces.unshift(res.trace);
+        state.selectedTraceId = res.trace.id;
+        state.selectedSpanId = res.trace.spans[0] ? res.trace.spans[0].id : null;
+      } catch (e) {
+        clearInterval(interval);
+        state.playgroundProgressNodeIndex = -1;
+        state.playgroundLog = [...state.playgroundLog, `ERROR: ${e.message}`];
+        workflow.mockResponse = `Run failed: ${e.message}`;
+      } finally {
+        state.playgroundIsRunning = false;
+        render();
+      }
     }
 
-    function triggerSimulation() {
+    // Run a real custom pipeline from the Generator tab.
+    async function triggerSimulation() {
       if (state.isSimulating) return;
+      if (!backend.ok) { await loadConfig(); }
       state.isSimulating = true;
-      state.simProgress = 0;
-      state.simLog = [];
-      
-      const stepsToRun = [];
-      if (state.simSteps.planner) stepsToRun.push({ label: "Planner Routing Node Initiated", type: "planner", ms: 140, tokens: 380 });
-      if (state.simSteps.retriever) stepsToRun.push({ label: "Retriever DB Matching Completed", type: "retriever", ms: 310, tokens: 0 });
-      if (state.simSteps.tool) stepsToRun.push({ label: "External Python Sandbox Tool Execution", type: "tool", ms: 400, tokens: 210 });
-      stepsToRun.push({ label: "Generative LLM Context Ingestion & Generation", type: "llm", ms: 680, tokens: 1350 });
-      if (state.simSteps.evaluator) stepsToRun.push({ label: "LLM-as-a-Judge Evaluation Finalized", type: "evaluator", ms: 120, tokens: 110 });
-
+      state.simProgress = 30;
+      state.simLog = ['Submitting custom pipeline to backend…', `Steps: ${Object.keys(state.simSteps).filter(k => state.simSteps[k]).join(', ') || 'llm only'}`];
       render();
 
-      let currentStepIndex = 0;
-      const interval = setInterval(() => {
-        if (currentStepIndex < stepsToRun.length) {
-          const step = stepsToRun[currentStepIndex];
-          state.simLog.push(`[${step.type.toUpperCase()}] ${step.label} (${step.ms}ms)`);
-          state.simProgress = Math.min(((currentStepIndex + 1) / stepsToRun.length) * 100, 100);
-          currentStepIndex++;
-          render();
-        } else {
-          clearInterval(interval);
-          
-          const finalLatency = stepsToRun.reduce((acc, s) => acc + s.ms, 0);
-          const finalTokens = stepsToRun.reduce((acc, s) => acc + s.tokens, 0);
-          const simulatedSpans = stepsToRun.map((step, idx) => {
-            let offset = stepsToRun.slice(0, idx).reduce((acc, s) => acc + s.ms, 0);
-            return {
-              id: `sim-sp-${idx}`,
-              name: step.label,
-              type: step.type,
-              duration: step.ms,
-              startOffset: offset,
-              status: "success",
-              tokens: step.tokens,
-              model: step.type === "llm" ? "gpt-4o-mini" : "agent-util-v2",
-              input: { query: state.simQuery },
-              output: step.type === "llm" 
-                ? { text: `Processed query regarding "${state.simQuery}". Simulated robust context alignment successfully integrated.` } 
-                : { state: "step_complete" },
-              conceptExplain: "Dynamically compiled trace step during active simulator flow. Spans aggregate live metrics instantly."
-            };
-          });
+      try {
+        const res = await api('/api/run', {
+          graph: 'Simulator',
+          input: state.simQuery,
+          attributes: buildAttributes(),
+          options: { steps: state.simSteps }
+        });
+        state.simLog = res.log;
+        state.simProgress = 100;
+        traces.unshift(res.trace);
+        state.selectedTraceId = res.trace.id;
+        state.selectedSpanId = res.trace.spans[0] ? res.trace.spans[0].id : null;
+        state.isSimulating = false;
+        state.activeTab = 'dashboard';
+        render();
+      } catch (e) {
+        state.simLog = [...state.simLog, `ERROR: ${e.message}`];
+        state.simProgress = 0;
+        state.isSimulating = false;
+        render();
+      }
+    }
 
-          const parsedAttributes = { topic: "general" };
-          customAttributes.forEach(attr => {
-            let rawVal = state.simAttributes[attr.name];
-            if (attr.type === 'Boolean') {
-              parsedAttributes[attr.name] = rawVal === 'true';
-            } else {
-              parsedAttributes[attr.name] = rawVal || 'neutral';
-            }
-          });
+    // Pull real historical traces back from LangSmith into the dashboard/explorer.
+    async function syncFromLangSmith() {
+      if (!backend.langsmith) {
+        alert('LangSmith is not configured. Set LANGSMITH_API_KEY in .env and restart the server.');
+        return;
+      }
+      const btn = document.getElementById('ls-sync-btn');
+      if (btn) { btn.disabled = true; btn.dataset.label = btn.innerText; btn.innerText = 'Syncing…'; }
+      try {
+        const { traces: pulled } = await api('/api/traces?limit=20');
+        // Merge: keep this session's live runs, add LangSmith history not already present.
+        const existing = new Set(traces.map(t => t.id));
+        pulled.forEach(t => { if (!existing.has(t.id)) traces.push(t); });
+        render();
+      } catch (e) {
+        alert('Sync failed: ' + e.message);
+      } finally {
+        if (btn) { btn.disabled = false; btn.innerText = btn.dataset.label || 'Sync from LangSmith'; }
+      }
+    }
 
-          const newTraceId = `tr-sim-${Math.random().toString(36).substring(2, 6)}`;
-          const simulatedTrace = {
-            id: newTraceId,
-            name: `Custom Simulated Run: ${state.simQuery.slice(0, 24)}...`,
-            timestamp: "Just now",
-            latency: finalLatency,
-            tokens: finalTokens,
-            cost: parseFloat((finalTokens * 0.000015).toFixed(4)),
-            status: "success",
-            evalScore: Math.floor(Math.random() * 20) + 80,
-            query: state.simQuery,
-            attributes: parsedAttributes,
-            spans: simulatedSpans
-          };
-
-          traces.unshift(simulatedTrace);
-          state.selectedTraceId = newTraceId;
-          state.selectedSpanId = simulatedSpans[0].id;
-          state.isSimulating = false;
-          state.activeTab = "insights"; 
+    // Fetch full span tree for a LangSmith-sourced trace when it is selected.
+    async function hydrateTraceFromLangSmith(id) {
+      try {
+        const detail = await api('/api/traces/' + id);
+        const idx = traces.findIndex(t => t.id === id);
+        if (idx >= 0) {
+          traces[idx] = { ...traces[idx], ...detail };
+          if (detail.spans && detail.spans[0]) state.selectedSpanId = detail.spans[0].id;
           render();
         }
-      }, 350);
+      } catch (e) { /* leave the summary as-is */ }
     }
   </script>
 
   <!-- HEADER BAR -->
   <header class="border-b border-slate-200 bg-white sticky top-0 z-50 px-6 py-3.5 flex flex-col xl:flex-row justify-between items-center gap-4 shadow-sm shadow-slate-100/40">
     <div class="flex items-center gap-3">
-      <div class="p-2 bg-blue-50 border border-blue-200 rounded-lg text-blue-600 shadow-sm">
+      <div class="p-2 rounded-xl text-white shadow-md" style="background:linear-gradient(135deg,var(--grape),var(--berry));box-shadow:0 8px 20px -8px rgba(124,58,237,0.7)">
         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polygon points="2 17 12 22 22 17"/><polygon points="2 12 12 17 22 12"/></svg>
       </div>
       <div>
@@ -776,49 +956,44 @@
         </div>
         <p class="text-[11px] text-slate-500 font-normal">Autonomous Sandbox, Playground, and System Optimization Suite</p>
       </div>
+      <div class="relative ml-2">
+        <button id="connection-status" onclick="toggleKeyPanel()" class="flex items-center gap-1.5 rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-[10px] font-semibold text-slate-500 hover:bg-slate-100 transition-all" title="API keys / connection">
+          <span id="conn-dot" class="h-1.5 w-1.5 rounded-full bg-slate-300"></span>
+          <span id="conn-label">Checking…</span>
+          <svg class="h-2.5 w-2.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div id="key-panel" class="hidden absolute right-0 mt-2 w-72 rounded-xl border border-slate-200 bg-white p-4 shadow-xl z-[60] space-y-3 text-left">
+          <div class="space-y-1">
+            <label class="text-[10px] font-bold uppercase tracking-wider text-slate-500">OpenAI API key</label>
+            <input id="input-openai-key" type="password" placeholder="sk-..." class="w-full rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-mono text-slate-700 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" />
+          </div>
+          <div class="space-y-1">
+            <label class="text-[10px] font-bold uppercase tracking-wider text-slate-500">LangSmith key <span class="font-normal text-slate-400">(optional)</span></label>
+            <input id="input-langsmith-key" type="password" placeholder="lsv2_..." class="w-full rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-mono text-slate-700 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" />
+          </div>
+          <button onclick="saveKeys()" id="save-keys-btn" class="btn-fun w-full h-9 rounded-xl text-xs font-semibold">Save &amp; connect</button>
+          <p id="key-panel-msg" class="text-[10px] text-slate-400 leading-relaxed">Stored only in this local server's memory for this session — never written to disk or sent anywhere but OpenAI/LangSmith.</p>
+        </div>
+      </div>
     </div>
 
     <!-- Navigation Tabs -->
     <nav class="inline-flex h-10 items-center justify-center rounded-lg bg-slate-150 p-1 text-slate-600 max-w-full overflow-x-auto">
-      <button onclick="changeTab('instrumentation')" id="nav-instrumentation" class="inline-flex items-center gap-1.5 justify-center whitespace-nowrap rounded-md px-3.5 py-1.5 text-xs font-semibold transition-all">
-        <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
-        <span>1. Instrumentation</span>
-      </button>
       <button onclick="changeTab('playground')" id="nav-playground" class="inline-flex items-center gap-1.5 justify-center whitespace-nowrap rounded-md px-3.5 py-1.5 text-xs font-semibold transition-all">
-        <svg class="h-3.5 w-3.5 animate-pulse text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-        <span>2. Playground</span>
+        <svg class="h-3.5 w-3.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        <span>Playground</span>
+      </button>
+      <button onclick="changeTab('simulator')" id="nav-simulator" class="inline-flex items-center gap-1.5 justify-center whitespace-nowrap rounded-md px-3.5 py-1.5 text-xs font-semibold transition-all">
+        <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+        <span>Generator</span>
       </button>
       <button onclick="changeTab('dashboard')" id="nav-dashboard" class="inline-flex items-center gap-1.5 justify-center whitespace-nowrap rounded-md px-3.5 py-1.5 text-xs font-semibold transition-all">
         <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-        <span>3. Trace Explorer</span>
+        <span>Traces</span>
       </button>
       <button onclick="changeTab('explorer')" id="nav-explorer" class="inline-flex items-center gap-1.5 justify-center whitespace-nowrap rounded-md px-3.5 py-1.5 text-xs font-semibold transition-all">
         <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><rect x="16" y="16" width="6" height="6" rx="1"/><rect x="2" y="16" width="6" height="6" rx="1"/><rect x="9" y="2" width="6" height="6" rx="1"/><path d="M12 8v8"/><path d="M12 16H6"/><path d="M18 16h-6"/></svg>
-        <span>4. Waterfall Analytics</span>
-      </button>
-      <button onclick="changeTab('retrieval')" id="nav-retrieval" class="inline-flex items-center gap-1.5 justify-center whitespace-nowrap rounded-md px-3.5 py-1.5 text-xs font-semibold transition-all">
-        <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <span>5. Retrieval Inspector</span>
-      </button>
-      <button onclick="changeTab('tokens')" id="nav-tokens" class="inline-flex items-center gap-1.5 justify-center whitespace-nowrap rounded-md px-3.5 py-1.5 text-xs font-semibold transition-all">
-        <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><circle cx="8" cy="8" r="6"/><circle cx="18" cy="18" r="4"/><path d="M12 18a6 6 0 0 0-6-6"/></svg>
-        <span>6. Evaluation Center</span>
-      </button>
-      <button onclick="changeTab('prompts')" id="nav-prompts" class="inline-flex items-center gap-1.5 justify-center whitespace-nowrap rounded-md px-3.5 py-1.5 text-xs font-semibold transition-all text-indigo-700 font-bold">
-        <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M13 6h3a2 2 0 0 1 2 2v7"/><path d="M11 18H8a2 2 0 0 1-2-2V9"/></svg>
-        <span>7. Prompt Optimization</span>
-      </button>
-      <button onclick="changeTab('analyzer')" id="nav-analyzer" class="inline-flex items-center gap-1.5 justify-center whitespace-nowrap rounded-md px-3.5 py-1.5 text-xs font-semibold transition-all text-rose-600 font-bold">
-        <svg class="h-3.5 w-3.5 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="14"/></svg>
-        <span>8. Response Efficiency</span>
-      </button>
-      <button onclick="changeTab('insights')" id="nav-insights" class="inline-flex items-center gap-1.5 justify-center whitespace-nowrap rounded-md px-3.5 py-1.5 text-xs font-semibold transition-all text-blue-650 font-bold">
-        <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-2-2h-5M3 21h18M3 10V3a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v7M3 21v-8a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v8"/></svg>
-        <span>9. Insights Dashboard</span>
-      </button>
-      <button onclick="changeTab('simulator')" id="nav-simulator" class="inline-flex items-center gap-1.5 justify-center whitespace-nowrap rounded-md px-3.5 py-1.5 text-xs font-semibold transition-all text-emerald-600 font-bold">
-        <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-        <span>Generator</span>
+        <span>Waterfall</span>
       </button>
     </nav>
   </header>
@@ -835,7 +1010,7 @@
     </div>
 
     <!-- TAB 1: INSTRUMENTATION EXPLORER -->
-    <div id="tab-instrumentation-view" class="space-y-6">
+    <div id="tab-instrumentation-view" class="hidden space-y-6">
       
       <!-- Architectural Concept Map -->
       <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -956,7 +1131,7 @@
           Graph Execution Playground
         </h2>
         <p class="text-xs text-slate-500 mt-1 max-w-4xl">
-          Observability begins with live graph testing. The playground mimics the **LangSmith Runnable Playground**, executing workflow DAG structures directly inside the UI. Select a pre-compiled graph architecture, enter an input prompt, and execute the nodes dynamically.
+          Observability begins with live graph testing. The playground mirrors the <strong class="text-violet-700">LangSmith Runnable Playground</strong> — pick a graph, type a question, and watch every node execute for real, streaming its spans to LangSmith.
         </p>
       </div>
 
@@ -970,7 +1145,7 @@
             <div class="grid grid-cols-1 gap-2.5">
               <div onclick="selectGraph('RetrievalGraph')" id="graph-btn-RetrievalGraph" class="p-3.5 border rounded-lg cursor-pointer transition-all flex justify-between items-center">
                 <div>
-                  <h4 class="text-xs font-bold text-slate-800">RetrievalGraph</h4>
+                  <h4 class="text-sm font-bold text-slate-800">🔍 RetrievalGraph</h4>
                   <p class="text-[10px] text-slate-500">Context matching & factual response synthesis</p>
                 </div>
                 <span class="inline-flex items-center rounded bg-blue-50 px-2 py-0.5 text-[9px] font-bold text-blue-700">RAG</span>
@@ -978,7 +1153,7 @@
 
               <div onclick="selectGraph('ResearchGraph')" id="graph-btn-ResearchGraph" class="p-3.5 border rounded-lg cursor-pointer transition-all flex justify-between items-center">
                 <div>
-                  <h4 class="text-xs font-bold text-slate-800">ResearchGraph</h4>
+                  <h4 class="text-sm font-bold text-slate-800">🧪 ResearchGraph</h4>
                   <p class="text-[10px] text-slate-500">Multi-agent loops with critic feedback revision</p>
                 </div>
                 <span class="inline-flex items-center rounded bg-purple-50 px-2 py-0.5 text-[9px] font-bold text-purple-700">Multi-Agent</span>
@@ -986,7 +1161,7 @@
 
               <div onclick="selectGraph('ToolCallingGraph')" id="graph-btn-ToolCallingGraph" class="p-3.5 border rounded-lg cursor-pointer transition-all flex justify-between items-center">
                 <div>
-                  <h4 class="text-xs font-bold text-slate-800">ToolCallingGraph</h4>
+                  <h4 class="text-sm font-bold text-slate-800">🛠️ ToolCallingGraph</h4>
                   <p class="text-[10px] text-slate-500">Autonomous function call arguments router</p>
                 </div>
                 <span class="inline-flex items-center rounded bg-amber-50 px-2 py-0.5 text-[9px] font-bold text-amber-700">Sandbox</span>
@@ -994,7 +1169,7 @@
 
               <div onclick="selectGraph('EvaluationGraph')" id="graph-btn-EvaluationGraph" class="p-3.5 border rounded-lg cursor-pointer transition-all flex justify-between items-center">
                 <div>
-                  <h4 class="text-xs font-bold text-slate-800">EvaluationGraph</h4>
+                  <h4 class="text-sm font-bold text-slate-800">⚖️ EvaluationGraph</h4>
                   <p class="text-[10px] text-slate-500">Autonomous alignment judge scoring inputs</p>
                 </div>
                 <span class="inline-flex items-center rounded bg-emerald-50 px-2 py-0.5 text-[9px] font-bold text-emerald-700">Judge</span>
@@ -1003,11 +1178,11 @@
 
             <!-- Graph Input field -->
             <div class="space-y-1.5 pt-2">
-              <label class="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Human Request Input</label>
-              <textarea id="playground-input-box" oninput="updatePlaygroundInput(this.value)" class="w-full bg-slate-50 border border-slate-200 text-xs rounded-lg p-3 h-24 focus:outline-none focus:border-slate-300 font-mono text-slate-700" placeholder="Type custom system parameter..."></textarea>
+              <label class="text-[10px] uppercase font-bold text-slate-500 tracking-wider">⌨️ Type your question here</label>
+              <textarea id="playground-input-box" oninput="updatePlaygroundInput(this.value)" class="w-full bg-slate-50 border border-slate-200 text-xs rounded-lg p-3 h-24 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 font-mono text-slate-700" placeholder="e.g. What does LangSmith pricing include? — then press Run below"></textarea>
             </div>
 
-            <button onclick="executeGraphPlayground()" id="playground-run-btn" class="w-full h-10 tracking-wider font-semibold bg-blue-600 text-white hover:bg-blue-700 flex items-center justify-center gap-2 rounded-lg text-xs transition-all shadow-sm">
+            <button onclick="executeGraphPlayground()" id="playground-run-btn" class="btn-fun w-full h-11 tracking-wider font-semibold flex items-center justify-center gap-2 rounded-xl text-xs">
               <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
               <span>EXECUTE PLAYGROUND RUN</span>
             </button>
@@ -1075,7 +1250,10 @@
             <div class="p-6 pt-4 space-y-3" id="dashboard-traces-container"></div>
 
             <div class="flex items-center justify-between p-6 pt-0 border-t border-slate-100 mt-4 py-4 bg-slate-50/50 rounded-b-lg">
-              <span class="text-[10px] text-slate-400 font-semibold font-mono">Visual database synchronizer</span>
+              <button id="ls-sync-btn" onclick="syncFromLangSmith()" class="inline-flex items-center justify-center rounded-lg text-xs font-semibold transition-all border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 h-8 px-3">
+                <svg class="mr-1.5 h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>
+                Sync from LangSmith
+              </button>
               <button onclick="changeTab('explorer')" class="inline-flex items-center justify-center rounded-lg text-xs font-semibold transition-all border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:text-slate-900 h-8 px-3">
                 Explore Full Trace Trees <svg class="ml-1.5 h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
               </button>
@@ -1750,7 +1928,7 @@ Strict constraints: Do NOT project or assume claims lacking context backing.
               <div id="simulator-attributes-inject-list" class="space-y-2.5"></div>
             </div>
 
-            <button onclick="triggerSimulation()" id="btn-run-simulation" class="w-full h-10 tracking-wider font-semibold bg-slate-900 text-white hover:bg-slate-800 flex items-center justify-center gap-2 rounded-lg text-xs transition-all shadow-sm">
+            <button onclick="triggerSimulation()" id="btn-run-simulation" class="btn-fun w-full h-11 tracking-wider font-semibold flex items-center justify-center gap-2 rounded-xl text-xs">
               <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
               <span>EXECUTE CUSTOM SIMULATION</span>
             </button>
@@ -1795,8 +1973,8 @@ Strict constraints: Do NOT project or assume claims lacking context backing.
 
   <!-- FOOTER -->
   <footer class="border-t border-slate-200 bg-white p-6 mt-12 text-center text-slate-500 space-y-2">
-    <p class="text-xs leading-relaxed max-w-4xl mx-auto">
-      <strong>Agent Engineering Lab</strong> is a simulated Educational sandbox showcasing agent observability concepts including Spans, Trace hierarchies, RAG lookups, automated alignment evaluation pipelines, custom attributes, and Insights agent reports.
+    <p class="text-xs">
+      © wuisabel-gif · All rights reserved · 2026
     </p>
   </footer>
 
@@ -1804,15 +1982,17 @@ Strict constraints: Do NOT project or assume claims lacking context backing.
   <script>
     function render() {
       // 1. NAV TABS ACTIVE STYLING
-      const tabs = ['instrumentation', 'playground', 'dashboard', 'explorer', 'retrieval', 'tokens', 'prompts', 'analyzer', 'insights', 'simulator'];
+      const tabs = ['playground', 'dashboard', 'explorer', 'simulator'];
       tabs.forEach(tab => {
         const btn = document.getElementById(`nav-${tab}`);
         const view = document.getElementById(`tab-${tab}-view`);
+        if (!btn) return;
+        const baseCls = "inline-flex items-center gap-1.5 justify-center whitespace-nowrap rounded-md px-3.5 py-1.5 text-xs font-semibold transition-all";
         if (state.activeTab === tab) {
-          btn.className = "inline-flex items-center gap-1.5 justify-center whitespace-nowrap rounded-md px-3.5 py-1.5 text-xs font-semibold transition-all bg-white text-blue-600 shadow-sm border border-slate-200/50";
+          btn.className = baseCls + " nav-active";
           if (view) view.classList.remove('hidden');
         } else {
-          btn.className = "inline-flex items-center gap-1.5 justify-center whitespace-nowrap rounded-md px-3.5 py-1.5 text-xs font-semibold transition-all text-slate-600 hover:text-slate-900 hover:bg-slate-200/40";
+          btn.className = baseCls;
           if (view) view.classList.add('hidden');
         }
       });
@@ -1882,13 +2062,21 @@ Strict constraints: Do NOT project or assume claims lacking context backing.
         const graphKey = state.selectedGraph;
         const workflow = graphWorkflows[graphKey];
 
-        // Highlight selected graph card
+        // Highlight selected graph card — each graph has its own playful accent
+        const graphAccent = {
+          RetrievalGraph: 'from-sky-50 to-blue-50 border-blue-400 ring-blue-300/40',
+          ResearchGraph:  'from-violet-50 to-fuchsia-50 border-violet-400 ring-violet-300/40',
+          ToolCallingGraph:'from-amber-50 to-orange-50 border-orange-400 ring-orange-300/40',
+          EvaluationGraph:'from-emerald-50 to-teal-50 border-emerald-400 ring-emerald-300/40',
+        };
         Object.keys(graphWorkflows).forEach(key => {
           const btn = document.getElementById(`graph-btn-${key}`);
+          if (!btn) return;
+          const base = "graph-card card-lift p-3.5 border-2 rounded-2xl cursor-pointer flex justify-between items-center ";
           if (key === graphKey) {
-            btn.className = "p-3.5 border rounded-lg cursor-pointer transition-all flex justify-between items-center bg-blue-50/50 border-blue-400 shadow-sm";
+            btn.className = base + `bg-gradient-to-br ${graphAccent[key] || 'from-violet-50 to-fuchsia-50 border-violet-400 ring-violet-300/40'} ring-4 shadow-md`;
           } else {
-            btn.className = "p-3.5 border rounded-lg cursor-pointer transition-all flex justify-between items-center bg-white border-slate-200 hover:border-slate-300";
+            btn.className = base + "bg-white/70 border-slate-200/70 hover:border-violet-300";
           }
         });
 
@@ -1898,25 +2086,28 @@ Strict constraints: Do NOT project or assume claims lacking context backing.
         // Populate DAG map nodes
         let dagHtml = '';
         workflow.nodes.forEach((node, idx) => {
-          let stateClass = "border-slate-200 bg-white text-slate-500";
+          let stateClass = "border-slate-200 bg-white/70 text-slate-500";
+          let mark = "";
           if (idx < state.playgroundProgressNodeIndex) {
             // Completed node
-            stateClass = "border-emerald-300 bg-emerald-50 text-emerald-700 font-semibold";
+            stateClass = "border-emerald-400 bg-gradient-to-br from-emerald-50 to-teal-50 text-emerald-700 font-semibold";
+            mark = `<span class="mr-1 text-emerald-500">✓</span>`;
           } else if (idx === state.playgroundProgressNodeIndex) {
-            // Active Node pulsing
-            stateClass = "border-blue-500 bg-blue-50 text-blue-700 font-extrabold animate-pulse ring-2 ring-blue-200";
+            // Active Node — glowing gradient
+            stateClass = "is-active border-violet-400 bg-gradient-to-br from-violet-100 to-fuchsia-100 text-violet-800 font-extrabold ring-2 ring-violet-300/50";
+            mark = `<span class="mr-1 inline-block h-1.5 w-1.5 rounded-full bg-violet-500 align-middle"></span>`;
           }
 
           dagHtml += `
-            <div class="px-3.5 py-2 border rounded-lg text-[11px] font-mono shadow-sm transition-all ${stateClass}">
-              ${node}
+            <div class="dag-node px-3.5 py-2 border-2 rounded-xl text-[11px] font-mono shadow-sm ${stateClass}">
+              ${mark}${node}
             </div>
           `;
 
           // Connector arrow
           if (idx < workflow.nodes.length - 1) {
             dagHtml += `
-              <div class="text-slate-400 font-bold font-mono">→</div>
+              <div class="text-violet-300 font-bold font-mono">→</div>
             `;
           }
         });
@@ -2695,6 +2886,7 @@ Strict constraints: Do NOT project or assume claims lacking context backing.
     // Initial page load trigger
     window.onload = function() {
       render();
+      loadConfig();
     }
   </script>
 </body>

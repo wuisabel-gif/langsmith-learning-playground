@@ -1,0 +1,24 @@
+# Render Blueprint — https://render.com/docs/blueprint-spec
+# Deploy: Render dashboard → New + → Blueprint → pick this repo → fill in the
+# two secret keys when prompted. The server serves the UI and the /api/* routes.
+services:
+  - type: web
+    name: langsmith-learning-playground
+    runtime: node
+    plan: free
+    buildCommand: npm install --omit=dev
+    startCommand: npm start
+    healthCheckPath: /api/config
+    envVars:
+      # Secrets — Render prompts you to paste these; they are NOT stored in the repo.
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: LANGSMITH_API_KEY
+        sync: false
+      # Non-secret config
+      - key: LANGSMITH_TRACING
+        value: "true"
+      - key: LANGSMITH_PROJECT
+        value: agent-engineering-lab
+      - key: NODE_VERSION
+        value: "20"

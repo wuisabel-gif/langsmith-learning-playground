@@ -105,9 +105,3 @@ nested trace in LangSmith — exactly the workflow this lab is meant to teach.
 
 The app opens on the **Playground** and keeps four tabs, all backed by the live server:
 Playground · Generator · Traces · Waterfall.
-
-The older static/illustrative tabs (Instrumentation, Retrieval Inspector, Evaluation Center,
-Prompt Optimization, Response Efficiency, Insights) were removed from the nav to keep things
-focused — their markup still lives in the HTML (hidden) if you ever want to wire them up and
-bring them back. The Traces tab also ships with a few seed example traces so the views aren't
-empty before your first run.
